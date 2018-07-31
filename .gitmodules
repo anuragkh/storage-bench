@@ -1,0 +1,3 @@
+[submodule "external/memorymux"]
+	path = external/memorymux
+	url = https://github.com/ucbrise/memorymux
