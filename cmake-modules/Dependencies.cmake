@@ -1,10 +1,14 @@
 include(ExternalProject)
 
+set(LIBEVENT_VERSION "2.1.8")
+set(THRIFT_VERSION "0.11.0")
 set(ZLIB_VERSION "1.2.11")
 set(OPENSSL_VERSION "1.1.1-pre7")
 set(CURL_VERSION "7.60.0")
 set(AWSSDK_VERSION "1.4.26")
 set(BOOST_VERSION "1.63.0")
+set(CATCH_VERSION "2.2.1")
+set(LIBCUCKOO_VERSION "0.2")
 set(CPP_REDIS_VERSION "4.3.1")
 
 set(BOOST_COMPONENTS "program_options")
@@ -60,9 +64,7 @@ else ()
   install(DIRECTORY ${Boost_INCLUDE_DIRS}/boost DESTINATION include)
 endif ()
 
-if (USE_SYSTEM_AWS_SDK)
-  find_package(aws-sdk-cpp REQUIRED)
-else ()
+if ((NOT USE_SYSTEM_AWS_SDK) OR (NOT USE_SYSTEM_THRIFT))
   set(ZLIB_CXX_FLAGS "${EXTERNAL_CXX_FLAGS}")
   set(ZLIB_C_FLAGS "${EXTERNAL_C_FLAGS}")
   set(ZLIB_PREFIX "${PROJECT_BINARY_DIR}/external/zlib")
@@ -117,7 +119,11 @@ else ()
 
   install(FILES ${OPENSSL_LIBRARIES} DESTINATION lib)
   install(DIRECTORY ${OPENSSL_INCLUDE_DIR}/openssl DESTINATION include)
+endif ()
 
+if (USE_SYSTEM_AWS_SDK)
+  find_package(aws-sdk-cpp REQUIRED)
+else ()
   set(CURL_CXX_FLAGS "${EXTERNAL_CXX_FLAGS}")
   set(CURL_C_FLAGS "${EXTERNAL_C_FLAGS}")
   set(CURL_PREFIX "${PROJECT_BINARY_DIR}/external/curl")
@@ -202,6 +208,147 @@ else ()
 
   install(FILES ${AWS_LIBRARIES} DESTINATION lib)
   install(DIRECTORY ${AWS_INCLUDE_DIR}/aws DESTINATION include)
+endif ()
+
+if (USE_SYSTEM_THRIFT)
+  find_package(Thrift ${THRIFT_VERSION} REQUIRED)
+else ()
+  set(LIBEVENT_CXX_FLAGS "${EXTERNAL_CXX_FLAGS}")
+  set(LIBEVENT_C_FLAGS "${EXTERNAL_C_FLAGS}")
+  set(LIBEVENT_PREFIX "${PROJECT_BINARY_DIR}/external/libevent")
+  set(LIBEVENT_HOME "${LIBEVENT_PREFIX}")
+  set(LIBEVENT_INCLUDE_DIR "${LIBEVENT_PREFIX}/include")
+  set(LIBEVENT_STATIC_LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}event")
+  set(LIBEVENT_CORE_STATIC_LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}event_core")
+  set(LIBEVENT_EXTRA_STATIC_LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}event_extra")
+  set(LIBEVENT_LIBRARIES "${LIBEVENT_PREFIX}/lib/${LIBEVENT_STATIC_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set(LIBEVENT_CMAKE_ARGS "-Wno-dev"
+          "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+          "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+          "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+          "-DCMAKE_INSTALL_PREFIX=${LIBEVENT_PREFIX}"
+          "-DENABLE_TESTING=OFF"
+          "-DBUILD_SHARED_LIBS=OFF"
+          "-DEVENT__DISABLE_OPENSSL=ON"
+          "-DEVENT__DISABLE_BENCHMARK=ON"
+          "-DEVENT__DISABLE_TESTS=ON")
+  ExternalProject_Add(libevent
+          URL https://github.com/nmathewson/Libevent/archive/release-${LIBEVENT_VERSION}-stable.tar.gz
+          CMAKE_ARGS ${LIBEVENT_CMAKE_ARGS}
+          LOG_DOWNLOAD ON
+          LOG_CONFIGURE ON
+          LOG_BUILD ON
+          LOG_INSTALL ON)
+  include_directories(SYSTEM ${LIBEVENT_INCLUDE_DIR})
+  message(STATUS "Libevent include dir: ${LIBEVENT_INCLUDE_DIR}")
+  message(STATUS "Libevent static libraries: ${LIBEVENT_LIBRARIES}")
+
+  install(FILES ${LIBEVENT_LIBRARIES} DESTINATION lib)
+  install(DIRECTORY ${LIBEVENT_INCLUDE_DIR}/ DESTINATION include)
+
+  set(THRIFT_CXX_FLAGS "${EXTERNAL_CXX_FLAGS}")
+  set(THRIFT_C_FLAGS "${EXTERNAL_C_FLAGS}")
+  set(THRIFT_PREFIX "${PROJECT_BINARY_DIR}/external/thrift")
+  set(THRIFT_HOME "${THRIFT_PREFIX}")
+  set(THRIFT_INCLUDE_DIR "${THRIFT_PREFIX}/include")
+  if (USE_SYSTEM_BOOST)
+    set(THRIFT_PREFIX_PATH "${LIBEVENT_PREFIX}|${ZLIB_PREFIX}|${OPENSSL_PREFIX}")
+  else ()
+    set(THRIFT_PREFIX_PATH "${LIBEVENT_PREFIX}|${ZLIB_PREFIX}|${OPENSSL_PREFIX}|${BOOST_PREFIX}")
+  endif ()
+  set(THRIFT_CMAKE_ARGS "-Wno-dev"
+          "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+          "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+          "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+          "-DCMAKE_CXX_FLAGS=${THRIFT_CXX_FLAGS}"
+          "-DCMAKE_C_FLAGS=${THRIFT_C_FLAGS}"
+          "-DCMAKE_INSTALL_PREFIX=${THRIFT_PREFIX}"
+          "-DCMAKE_INSTALL_RPATH=${THRIFT_PREFIX}/lib"
+          "-DBUILD_COMPILER=${GENERATE_THRIFT}"
+          "-DBUILD_TESTING=OFF"
+          "-DWITH_SHARED_LIB=OFF"
+          "-DWITH_QT4=OFF"
+          "-DWITH_QT5=OFF"
+          "-DWITH_C_GLIB=OFF"
+          "-DWITH_HASKELL=OFF"
+          "-DWITH_LIBEVENT=ON"
+          "-DWITH_JAVA=OFF"
+          "-DWITH_PYTHON=OFF"
+          "-DWITH_CPP=ON"
+          "-DWITH_STDTHREADS=OFF"
+          "-DWITH_BOOSTTHREADS=OFF"
+          "-DWITH_STATIC_LIB=ON"
+          "-DCMAKE_PREFIX_PATH=${THRIFT_PREFIX_PATH}"
+          "-DZLIB_LIBRARY=${ZLIB_LIBRARY}") # Force usage of static library
+
+  set(THRIFT_STATIC_LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}thrift")
+  if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    set(THRIFT_STATIC_LIB_NAME "${THRIFT_STATIC_LIB_NAME}d")
+  endif ()
+  set(THRIFT_LIBRARIES "${THRIFT_PREFIX}/lib/${THRIFT_STATIC_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  set(THRIFTNB_STATIC_LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}thriftnb")
+  if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    set(THRIFTNB_STATIC_LIB_NAME "${THRIFTNB_STATIC_LIB_NAME}d")
+  endif ()
+  set(THRIFTNB_LIBRARIES "${THRIFT_PREFIX}/lib/${THRIFTNB_STATIC_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+  if (GENERATE_THRIFT)
+    set(THRIFT_COMPILER "${THRIFT_PREFIX}/bin/thrift")
+  endif ()
+  ExternalProject_Add(thrift
+          DEPENDS boost libevent openssl zlib
+          URL "http://archive.apache.org/dist/thrift/${THRIFT_VERSION}/thrift-${THRIFT_VERSION}.tar.gz"
+          LIST_SEPARATOR |
+          CMAKE_ARGS ${THRIFT_CMAKE_ARGS}
+          LOG_DOWNLOAD ON
+          LOG_CONFIGURE ON
+          LOG_BUILD ON
+          LOG_INSTALL ON)
+
+  include_directories(SYSTEM ${THRIFT_INCLUDE_DIR})
+  message(STATUS "Thrift include dir: ${THRIFT_INCLUDE_DIR}")
+  message(STATUS "Thrift static libraries: ${THRIFT_LIBRARIES}")
+  message(STATUS "Thrift non-blocking libraries: ${THRIFTNB_LIBRARIES}")
+
+  if (GENERATE_THRIFT)
+    message(STATUS "Thrift compiler: ${THRIFT_COMPILER}")
+    add_executable(thriftcompiler IMPORTED GLOBAL)
+    set_target_properties(thriftcompiler PROPERTIES IMPORTED_LOCATION ${THRIFT_COMPILER})
+    add_dependencies(thriftcompiler thrift)
+  endif ()
+
+  install(FILES ${THRIFT_LIBRARIES} DESTINATION lib)
+  install(DIRECTORY ${THRIFT_INCLUDE_DIR}/thrift DESTINATION include)
+endif ()
+
+if (NOT USE_SYSTEM_LIBCUCKOO)
+  set(LIBCUCKOO_CXX_FLAGS "${EXTERNAL_CXX_FLAGS}")
+  set(LIBCUCKOO_C_FLAGS "${EXTERNAL_C_FLAGS}")
+  set(LIBCUCKOO_PREFIX "${PROJECT_BINARY_DIR}/external/libcuckoo")
+  set(LIBCUCKOO_HOME "${LIBCUCKOO_PREFIX}")
+  set(LIBCUCKOO_INCLUDE_DIR "${LIBCUCKOO_PREFIX}/include")
+  set(LIBCUCKOO_CMAKE_ARGS "-Wno-dev"
+          "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+          "-DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}"
+          "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+          "-DCMAKE_CXX_FLAGS=${LIBCUCKOO_CXX_FLAGS}"
+          "-DCMAKE_INSTALL_PREFIX=${LIBCUCKOO_PREFIX}"
+          "-DBUILD_EXAMPLES=OFF"
+          "-DBUILD_TESTS=OFF"
+          "-DBUILD_STRESS_TESTS=OFF"
+          "-DBUILD_UNIVERSAL_BENCHMARK=OFF")
+
+  ExternalProject_Add(libcuckoo
+          URL "https://github.com/efficient/libcuckoo/archive/v${LIBCUCKOO_VERSION}.tar.gz"
+          CMAKE_ARGS ${LIBCUCKOO_CMAKE_ARGS}
+          LOG_DOWNLOAD ON
+          LOG_CONFIGURE ON
+          LOG_BUILD ON
+          LOG_INSTALL ON)
+
+  include_directories(SYSTEM ${LIBCUCKOO_INCLUDE_DIR})
+  message(STATUS "libcuckoo include dir: ${LIBCUCKOO_INCLUDE_DIR}")
+
+  install(DIRECTORY ${LIBCUCKOO_INCLUDE_DIR}/libcuckoo DESTINATION include)
 endif ()
 
 if (NOT USE_SYSTEM_JEMALLOC)

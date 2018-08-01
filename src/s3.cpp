@@ -27,7 +27,7 @@ void s3::init(const storage_interface::property_map &conf) {
   m_client = Aws::MakeShared<S3Client>("S3Benchmark", config);
 
   // Create the bucket
-  auto bucket_name = conf.get<std::string>("bucket_name") + "." + random_string(10);
+  auto bucket_name = conf.get<std::string>("bucket_name", "test") + "." + random_string(10);
   m_bucket_name = Aws::String(bucket_name);
 
   CreateBucketRequest createBucketRequest;

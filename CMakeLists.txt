@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(storage-bench C CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -21,7 +21,10 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 include(Dependencies)
 
+add_subdirectory(external/libmmux)
+
 include_directories(src)
+include_directories(external/libmmux/src)
 add_executable(storage_bench
         src/main.cpp
         src/storage_interface.cpp
@@ -52,6 +55,7 @@ if (NOT USE_SYSTEM_CPP_REDIS)
 endif ()
 
 target_link_libraries(storage_bench
+        mmux
         ${JEMALLOC_LIBRARIES}
         ${Boost_LIBRARIES}
         ${AWS_LIBRARIES}

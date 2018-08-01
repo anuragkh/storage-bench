@@ -2,6 +2,7 @@
 #define STORAGE_BENCH_MEMORYMUX_H
 
 #include "storage_interface.h"
+#include <mmux/client/mmux_client.h>
 
 class memorymux: public storage_interface {
  public:
@@ -11,7 +12,9 @@ class memorymux: public storage_interface {
   void destroy() override;
 
  private:
-
+  std::string m_mmux_path;
+  std::shared_ptr<mmux::client::mmux_client> m_mmux_client;
+  std::shared_ptr<mmux::storage::kv_client> m_client;
 };
 
 #endif //STORAGE_BENCH_MEMORYMUX_H

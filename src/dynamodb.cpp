@@ -36,11 +36,11 @@ void dynamodb::init(const property_map &conf) {
   createTableRequest.AddKeySchema(hashKeySchemaElement);
   ProvisionedThroughput provisionedThroughput;
 
-  auto table_name = conf.get<std::string>("table_name") + "." + random_string(10);
+  auto table_name = conf.get<std::string>("table_name", "test") + "." + random_string(10);
   m_table_name = Aws::String(table_name);
 
-  provisionedThroughput.SetReadCapacityUnits(conf.get<long long>("read_capacity"));
-  provisionedThroughput.SetWriteCapacityUnits(conf.get<long long>("write_capacity"));
+  provisionedThroughput.SetReadCapacityUnits(conf.get<long long>("read_capacity", 10000));
+  provisionedThroughput.SetWriteCapacityUnits(conf.get<long long>("write_capacity", 10000));
   createTableRequest.WithProvisionedThroughput(provisionedThroughput);
   createTableRequest.WithTableName(m_table_name);
 
