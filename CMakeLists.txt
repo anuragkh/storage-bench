@@ -63,3 +63,19 @@ target_link_libraries(storage_bench
         ${OPENSSL_LIBRARIES}
         ${ZLIB_LIBRARY}
         ${CPP_REDIS_LIBRARIES})
+
+set(ZIP_FILE ${CMAKE_BINARY_DIR}/lambda.zip)
+set(BENCHMARK_RUNNER_SRC "${CMAKE_SOURCE_DIR}/src/benchmark_handler.py")
+set(BENCHMARK_RUNNER "${CMAKE_BINARY_DIR}/benchmark_handler.py")
+set(STORAGE_BENCH "${CMAKE_BINARY_DIR}/storage_bench")
+set(FILES_TO_ZIP ${CMAKE_SOURCE_DIR}/src/benchmark_handler.py ${CMAKE_BINARY_DIR}/storage_bench)
+message(STATUS "Files to zip: ${FILES_TO_ZIP}")
+
+add_custom_command(OUTPUT ${ZIP_FILE}
+        COMMAND ${CMAKE_COMMAND} -E copy ${BENCHMARK_RUNNER_SRC} ${BENCHMARK_RUNNER}
+        COMMAND ${CMAKE_COMMAND} -E tar cfv ${ZIP_FILE} --format=zip -- ${STORAGE_BENCH} ${BENCHMARK_RUNNER}
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        DEPENDS storage_bench
+        COMMENT "Packaging code"
+        VERBATIM)
+add_custom_target(pkg DEPENDS ${ZIP_FILE})
