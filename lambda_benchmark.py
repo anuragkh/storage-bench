@@ -54,7 +54,7 @@ def create_function(name):
     )
 
 
-def parse_ini(conf_file, system):
+def parse_ini(system, conf_file):
     config = configparser.ConfigParser()
     config.read(conf_file)
     return dict(config.items(system))
