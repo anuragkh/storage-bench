@@ -71,6 +71,7 @@ def invoke_function(name, system, conf_file):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run storage benchmark on AWS Lambda.')
+    parser.add_argument('--create', action='store_true', help='create AWS Lambda function')
     parser.add_argument('--invoke', action='store_true', help='invoke AWS Lambda function')
     parser.add_argument('--system', type=str, default='s3', help='system to benchmark')
     parser.add_argument('--conf', type=str, default='conf/storage_bench.conf', help='configuration file')
