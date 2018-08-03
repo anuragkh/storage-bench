@@ -85,7 +85,7 @@ def run_server(host, port):
         print('Bind failed: {}'.format(ex))
         sys.exit()
     s.listen(10)
-    print('Listening for connections')
+    print('Listening for function logs')
 
     address = None
     while True:
@@ -96,7 +96,7 @@ def run_server(host, port):
                 # Handle the case in which there is a new connection recieved through server_socket
                 sock, address = s.accept()
                 connections.append(sock)
-                print("Client {} connected".format(address))
+                print("Function @ {} connected".format(address))
 
             # Some incoming message from a client
             else:
@@ -109,7 +109,7 @@ def run_server(host, port):
 
                 # client disconnected, so remove from socket list
                 except socket.error as ex:
-                    print("Client {} is offline: {}".format(address, ex))
+                    print("Function @ {} is offline: {}".format(address, ex))
                     sock.close()
                     connections.remove(sock)
                     continue
@@ -150,5 +150,7 @@ if __name__ == '__main__':
     if args.invoke:
         p = Process(target=run_server, args=(args.host, args.port))
         p.start()
+        print('Invoking function...')
         invoke_function(function_name, args.system, args.conf, args.host, args.port)
+        print('Done.')
         p.join()
