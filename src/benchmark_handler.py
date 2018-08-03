@@ -50,12 +50,14 @@ def _create_ini(system, conf, out):
 
 
 def _redirect_output(host, port):
+    print('Connecting to {}:{}'.format(host, port))
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
+    print('Connection successful; replacing stdout/stderr...')
     file = sock.makefile('w')
     sys.stdout = file
     sys.stderr = file
-    return sock
+    print('Done.')
 
 
 def benchmark_handler(event, context):
@@ -71,7 +73,7 @@ def benchmark_handler(event, context):
     except Exception as e:
         print('Exception: {}'.format(e))
         raise
-    
+
     prefix = os.path.join('/tmp', system)
     _create_ini(system, conf, prefix + '.conf')
     _run_benchmark(system, prefix + '.conf', prefix, 'sweep')
