@@ -32,6 +32,11 @@ def create_role():
                 },
                 "Action": [
                     "sts:AssumeRole",
+                ],
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
                     "logs:CreateLogGroup",
                     "logs:CreateLogStream",
                     "logs:PutLogEvents",
