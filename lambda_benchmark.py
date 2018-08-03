@@ -20,68 +20,6 @@ iam_client = boto3.client('iam')
 lambda_client = boto3.client('lambda')
 
 
-def create_role():
-    role_policy_document = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Action": [
-                    "s3:ListBucket",
-                    "s3:Put*",
-                    "s3:Get*",
-                    "s3:*MultipartUpload*"
-                ],
-                "Resource": "*",
-                "Effect": "Allow"
-            },
-            {
-                "Action": "logs:CreateLogGroup",
-                "Resource": "arn:aws:logs:us-east-1:361667776138:*",
-                "Effect": "Allow"
-            },
-            {
-                "Action": [
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                ],
-                "Resource": [
-                    "arn:aws:logs:us-east-1:361667776138:log-group:/aws/lambda/*:*"
-                ],
-                "Effect": "Allow"
-            },
-            {
-                "Action": "sts:AssumeRole",
-                "Resource": "arn:aws:iam::361667776138:role/*",
-                "Effect": "Allow"
-            },
-            {
-                "Action": "ec2:Describe*",
-                "Resource": "*",
-                "Effect": "Allow"
-            },
-            {
-                "Action": "sqs:*",
-                "Resource": "*",
-                "Effect": "Allow"
-            },
-            {
-                "Action": [
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                ],
-                "Resource": [
-                    "arn:aws:logs:us-east-1:361667776138:log-group:*:*"
-                ],
-                "Effect": "Allow"
-            }
-        ]
-    }
-    iam_client.create_role(
-        RoleName='LambdaBasicExecution',
-        AssumeRolePolicyDocument=json.dumps(role_policy_document),
-    )
-
-
 def create_function(name):
     env = dict()
     lambda_zip = '/tmp/build/lambda.zip'
@@ -91,7 +29,7 @@ def create_function(name):
         os.system('mkdir -p /tmp/build && cd /tmp/build && cmake {} && make -j {} pkg'.format(code_path, num_cpu))
     with open(lambda_zip, 'rb') as f:
         zipped_code = f.read()
-    role = iam_client.get_role(RoleName='LambdaBasicExecution')
+    role = iam_client.get_role(RoleName='aws-lambda-execute')
     lambda_client.create_function(
         FunctionName=name,
         Runtime='python3.6',
@@ -191,15 +129,6 @@ if __name__ == '__main__':
     function_name = "StorageBenchmark"
 
     if args.create:
-        try:
-            create_role()
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'EntityAlreadyExists':
-                print('Skipping role creation since it already exists...')
-            else:
-                print('Unexpected error: {}'.format(e))
-                raise
-
         try:
             create_function(function_name)
         except ClientError as e:
