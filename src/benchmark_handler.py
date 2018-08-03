@@ -22,6 +22,9 @@ class Logger(object):
     def error(self, msg):
         self._log('ERROR', msg)
 
+    def write(self, msg):
+        self.info(msg)
+
     def _log(self, msg_type, msg):
         self.f.send('{} {}'.format(msg_type, msg))
 
@@ -48,7 +51,7 @@ def _run_benchmark(logger, system, conf, out, bench, bin_path):
     executable = _init_bin(bin_path)
     cmdline = [executable, system, conf, out, bench]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
-    subprocess.check_call(cmdline, shell=False, stderr=subprocess.STDOUT)
+    subprocess.check_call(cmdline, shell=False, stderr=logger, stdout=logger)
 
 
 def _create_ini(logger, system, conf, out):
