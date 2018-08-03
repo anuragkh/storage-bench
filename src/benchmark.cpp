@@ -1,6 +1,14 @@
+
+#include <stdlib.h>
 #include <fstream>
 #include <chrono>
 #include "benchmark.h"
+
+std::string absolute_path(const std::string &path) {
+  char full_path[PATH_MAX];
+  realpath(path.c_str(), full_path);
+  return std::string(full_path);
+}
 
 void benchmark::run(const std::shared_ptr<storage_interface> &iface,
                     const std::string &output_path,
@@ -64,6 +72,11 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
 
   iface->destroy();
   std::cerr << "Destroyed storage interface." << std::endl;
+
+  std::cerr << "Read latency results written to " << absolute_path(output_path + "_read_latency.txt");
+  std::cerr << "Write latency written to " << absolute_path(output_path + "_write_latency.txt");
+  std::cerr << "Read throughput results written to " << absolute_path(output_path + "_read_throughput.txt");
+  std::cerr << "Write throughput results written to " << absolute_path(output_path + "_write_throughput.txt");
 
   lr.close();
   lw.close();
