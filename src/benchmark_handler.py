@@ -41,7 +41,8 @@ class Logger(object):
 
     def close(self):
         self.f.send('Closing logger connection...')
-        self.f.shutdown()
+        self.f.shutdown(socket.SHUT_RDWR)
+        self.f.close()
 
 
 def _init_bin(bin_path):
