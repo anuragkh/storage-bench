@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import datetime
 import errno
 import json
 import multiprocessing
@@ -108,7 +109,7 @@ def run_server(host, port):
                 print('Function @ {} finished execution'.format(address))
                 break
             elif data:
-                print('FUNCTION_LOG {}'.format(data))
+                print('FUNCTION_LOG {} {}'.format(datetime.datetime.now(), data))
         except socket.error as ex:
             print("Function @ {} is offline: {}".format(address, ex))
             sock.close()

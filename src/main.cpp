@@ -10,7 +10,7 @@
 #endif
 
 #ifndef MAX_DATASET_SIZE
-#define MAX_DATASET_SIZE 8589934592
+#define MAX_DATASET_SIZE 1073741824
 #endif
 
 #ifndef VALUE_SIZE_MIN
