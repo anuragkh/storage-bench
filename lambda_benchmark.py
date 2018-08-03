@@ -75,7 +75,7 @@ def invoke_function(name, system, conf_file, host, port):
     )
 
 
-def invoke_test_function(system, conf_file, host, port):
+def invoke_function_locally(system, conf_file, host, port):
     event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port)
     benchmark_handler(event, None)
 
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run storage benchmark on AWS Lambda.')
     parser.add_argument('--create', action='store_true', help='create AWS Lambda function')
     parser.add_argument('--invoke', action='store_true', help='invoke AWS Lambda function')
-    parser.add_argument('--test', action='', help='invoke function for test')
+    parser.add_argument('--invoke-local', action='store_true', help='invoke AWS Lambda function locally')
     parser.add_argument('--system', type=str, default='s3', help='system to benchmark')
     parser.add_argument('--conf', type=str, default='conf/storage_bench.conf', help='configuration file')
     parser.add_argument('--host', type=str, default=socket.gethostname(), help='name of host where script is run')
@@ -155,13 +155,13 @@ if __name__ == '__main__':
 
         print('Creation successful!')
 
-    if args.invoke or args.test:
+    if args.invoke or args.invoke_local:
         p = Process(target=run_server, args=(args.host, args.port))
         p.start()
         print('Invoking function...')
         if args.invoke:
             invoke_function(function_name, args.system, args.conf, args.host, args.port)
-        elif args.test:
-            invoke_test_function(args.system, args.conf, args.host, args.port)
+        elif args.invoke_local:
+            invoke_function_locally(args.system, args.conf, args.host, args.port)
         print('Done.')
         p.join()
