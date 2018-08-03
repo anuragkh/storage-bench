@@ -23,7 +23,6 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 SET(BUILD_SHARED_LIBS OFF)
-SET(CMAKE_EXE_LINKER_FLAGS "-static")
 
 include(Dependencies)
 
@@ -61,7 +60,8 @@ if (NOT USE_SYSTEM_CPP_REDIS)
 endif ()
 
 target_link_libraries(storage_bench
-        -static
+        -static-libgcc
+        -static-libstdc++
         mmux
         ${JEMALLOC_LIBRARIES}
         ${Boost_LIBRARIES}
