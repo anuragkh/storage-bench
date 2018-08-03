@@ -157,13 +157,14 @@ if __name__ == '__main__':
         print('Creation successful!')
 
     if args.invoke or args.invoke_local:
-        p = Process(target=run_server, args=(args.host, args.port))
-        p.start()
+        log_server_process = Process(target=run_server, args=(args.host, args.port))
+        log_server_process.start()
         if args.invoke:
             print('Invoking function...')
             invoke_function(function_name, args.system, args.conf, args.host, args.port)
+            print('Done.')
         elif args.invoke_local:
             print('Invoking function locally...')
             invoke_function_locally(args.system, args.conf, args.host, args.port)
-        print('Done.')
-        p.join()
+            print('Done.')
+        log_server_process.join()
