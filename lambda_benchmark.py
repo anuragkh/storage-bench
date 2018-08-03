@@ -4,7 +4,6 @@ import argparse
 import json
 import multiprocessing
 import os
-import select
 import socket
 import sys
 import time
@@ -97,12 +96,14 @@ def run_server(host, port):
     while True:
         try:
             data = sock.recv(4096)
-            print('FUNCTION_LOG {}'.format(data))
+            if data:
+                print('FUNCTION_LOG {}'.format(data))
         except socket.error as ex:
             print("Function @ {} is offline: {}".format(address, ex))
             sock.close()
             break
     s.close()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run storage benchmark on AWS Lambda.')
