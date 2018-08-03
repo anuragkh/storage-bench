@@ -99,7 +99,10 @@ def run_server(host, port):
     while True:
         try:
             data = sock.recv(4096).rstrip()
-            if data:
+            if data == 'CLOSE':
+                print('Function @ {} finished execution'.format(address))
+                break
+            elif data:
                 print('FUNCTION_LOG {}'.format(data))
         except socket.error as ex:
             print("Function @ {} is offline: {}".format(address, ex))

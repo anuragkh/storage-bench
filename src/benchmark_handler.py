@@ -40,7 +40,7 @@ class Logger(object):
         self.f.send('{} {}'.format(msg_type, msg).rstrip())
 
     def close(self):
-        self.f.send('Closing logger connection...')
+        self.f.send('CLOSE')
         self.f.shutdown(socket.SHUT_RDWR)
         self.f.close()
 
@@ -101,7 +101,7 @@ def benchmark_handler(event, context):
         print('Exception: {}'.format(e))
         raise
 
-    logger.info('event'.format(event))
+    logger.info('{}'.format(event))
 
     prefix = os.path.join('/tmp', system)
     _create_ini(logger, system, conf, prefix + '.conf')
