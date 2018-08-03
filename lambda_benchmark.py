@@ -13,7 +13,7 @@ import boto3
 from botocore.exceptions import ClientError
 from six.moves import configparser
 
-from src.benchmark_handler import benchmark_handler
+from src import benchmark_handler
 
 iam_client = boto3.client('iam')
 lambda_client = boto3.client('lambda')
@@ -77,7 +77,7 @@ def invoke_function(name, system, conf_file, host, port):
 
 def invoke_function_locally(system, conf_file, host, port):
     event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port)
-    benchmark_handler(event, None)
+    benchmark_handler.benchmark_handler(event, None)
 
 
 def run_server(host, port):
