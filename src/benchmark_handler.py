@@ -152,7 +152,7 @@ class Logger(object):
         self.f.send(b('{} {}'.format(msg_type, msg).rstrip()))
 
     def close(self):
-        self.f.send('CLOSE')
+        self.f.send(b('CLOSE'))
         self.f.shutdown(socket.SHUT_RDWR)
         self.f.close()
 
