@@ -25,26 +25,54 @@ def create_role():
         "Version": "2012-10-17",
         "Statement": [
             {
-                "Sid": "",
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": "lambda.amazonaws.com"
-                },
                 "Action": [
-                    "sts:AssumeRole",
+                    "s3:ListBucket",
+                    "s3:Put*",
+                    "s3:Get*",
+                    "s3:*MultipartUpload*"
                 ],
+                "Resource": "*",
+                "Effect": "Allow"
             },
             {
-                "Effect": "Allow",
+                "Action": "logs:CreateLogGroup",
+                "Resource": "arn:aws:logs:us-east-1:361667776138:*",
+                "Effect": "Allow"
+            },
+            {
                 "Action": [
-                    "logs:CreateLogGroup",
                     "logs:CreateLogStream",
-                    "logs:PutLogEvents",
-                    "logs:DescribeLogStreams"
+                    "logs:PutLogEvents"
                 ],
                 "Resource": [
-                    "arn:aws:logs:*:*:*"
-                ]
+                    "arn:aws:logs:us-east-1:361667776138:log-group:/aws/lambda/*:*"
+                ],
+                "Effect": "Allow"
+            },
+            {
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::361667776138:role/*",
+                "Effect": "Allow"
+            },
+            {
+                "Action": "ec2:Describe*",
+                "Resource": "*",
+                "Effect": "Allow"
+            },
+            {
+                "Action": "sqs:*",
+                "Resource": "*",
+                "Effect": "Allow"
+            },
+            {
+                "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                ],
+                "Resource": [
+                    "arn:aws:logs:us-east-1:361667776138:log-group:*:*"
+                ],
+                "Effect": "Allow"
             }
         ]
     }
