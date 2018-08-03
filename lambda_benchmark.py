@@ -4,6 +4,10 @@ import argparse
 import json
 import multiprocessing
 import os
+import select
+import socket
+import sys
+from multiprocessing import Process
 
 import boto3
 from botocore.exceptions import ClientError
@@ -60,13 +64,55 @@ def parse_ini(system, conf_file):
     return dict(config.items(system))
 
 
-def invoke_function(name, system, conf_file):
-    event = dict(system=system, conf=parse_ini(system, conf_file))
+def invoke_function(name, system, conf_file, host, port):
+    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port)
     lambda_client.invoke(
         FunctionName=name,
         InvocationType='Event',
         Payload=json.dumps(event),
     )
+
+
+def run_server(host, port):
+    connections = []
+    receive_buf_size = 4096
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        s.bind((host, port))
+    except socket.error as ex:
+        print('Bind failed: {}'.format(ex))
+        sys.exit()
+    s.listen(10)
+    print('Listening for connections')
+
+    address = None
+    while True:
+        read_sockets, write_sockets, error_sockets = select.select(connections, [], [])
+        for sock in read_sockets:
+            # New connection
+            if sock == s:
+                # Handle the case in which there is a new connection recieved through server_socket
+                sock, address = s.accept()
+                connections.append(sock)
+                print("Client {} connected".format(address))
+
+            # Some incoming message from a client
+            else:
+                # Data received from client, process it
+                try:
+                    # In Windows, sometimes when a TCP program closes abruptly,
+                    # a "Connection reset by peer" exception will be thrown
+                    data = sock.recv(receive_buf_size)
+                    print(data)
+
+                # client disconnected, so remove from socket list
+                except socket.error as ex:
+                    print("Client {} is offline: {}".format(address, ex))
+                    sock.close()
+                    connections.remove(sock)
+                    continue
 
 
 if __name__ == '__main__':
@@ -75,6 +121,8 @@ if __name__ == '__main__':
     parser.add_argument('--invoke', action='store_true', help='invoke AWS Lambda function')
     parser.add_argument('--system', type=str, default='s3', help='system to benchmark')
     parser.add_argument('--conf', type=str, default='conf/storage_bench.conf', help='configuration file')
+    parser.add_argument('--host', type=str, default=socket.gethostname(), help='name of host where script is run')
+    parser.add_argument('--port', type=int, default=8888, help='port that server listens on')
     args = parser.parse_args()
     function_name = "StorageBenchmark"
 
@@ -100,4 +148,7 @@ if __name__ == '__main__':
         print('Creation successful!')
 
     if args.invoke:
-        invoke_function(function_name, args.system, args.conf)
+        p = Process(target=run_server, args=(args.host, args.port))
+        p.start()
+        invoke_function(function_name, args.system, args.conf, args.host, args.port)
+        p.join()

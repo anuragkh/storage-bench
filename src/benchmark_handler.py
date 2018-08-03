@@ -2,7 +2,9 @@ from __future__ import print_function
 
 import os
 import shutil
+import socket
 import subprocess
+import sys
 
 import boto3
 from six.moves import configparser
@@ -44,9 +46,23 @@ def _create_ini(system, conf, out):
         conf.write(f)
 
 
+def _redirect_output(host, port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((host, port))
+    file = sock.makefile('w')
+    sys.stdout = file
+    sys.stderr = file
+    return sock
+
+
 def benchmark_handler(event, context):
     system = event['system']
     conf = event['conf']
+    host = event['host']
+    port = event['port']
+
+    _redirect_output(host, port)
+
     prefix = os.path.join('/tmp', system)
     _create_ini(system, conf, prefix + '.conf')
     _run_benchmark(system, prefix + '.conf', prefix, 'sweep')
