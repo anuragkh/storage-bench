@@ -56,11 +56,11 @@ if (NOT USE_SYSTEM_CPP_REDIS)
   add_dependencies(storage_bench cpp_redis)
 endif ()
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+set(CMAKE_EXE_LINKER_FLAGS "-static")
 target_link_libraries(storage_bench
-        mmux
         -static-libgcc
         -static-libstdc++
+        mmux
         ${JEMALLOC_LIBRARIES}
         ${Boost_LIBRARIES}
         ${AWS_LIBRARIES}
