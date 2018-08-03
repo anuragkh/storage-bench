@@ -41,7 +41,7 @@ class Logger(object):
 
     def close(self):
         self.f.send('Closing logger connection...')
-        self.f.close()
+        self.f.shutdown()
 
 
 def _init_bin(bin_path):
