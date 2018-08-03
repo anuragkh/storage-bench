@@ -97,7 +97,7 @@ def run_server(host, port):
         try:
             data = sock.recv(4096)
             if data:
-                print('FUNCTION_LOG {}'.format(data))
+                print('FUNCTION_LOG {}'.format(data.rstrip()))
         except socket.error as ex:
             print("Function @ {} is offline: {}".format(address, ex))
             sock.close()

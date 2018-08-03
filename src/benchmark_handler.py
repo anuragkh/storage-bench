@@ -9,6 +9,14 @@ import boto3
 from six.moves import configparser
 
 
+class NetworkFile(object):
+    def __init__(self, f):
+        self.f = f
+
+    def fileno(self):
+        return self.f.fileno()
+
+
 class Logger(object):
     def __init__(self, f):
         self.f = f
@@ -22,11 +30,11 @@ class Logger(object):
     def error(self, msg):
         self._log('ERROR', msg)
 
-    def fileno(self):
-        return self.f.fileno()
+    def stdout(self):
+        return NetworkFile(self.f)
 
-    def write(self, msg):
-        self.info(msg)
+    def stderr(self):
+        return NetworkFile(self.f)
 
     def _log(self, msg_type, msg):
         self.f.send('{} {}'.format(msg_type, msg).rstrip())
@@ -54,7 +62,7 @@ def _run_benchmark(logger, system, conf, out, bench, bin_path):
     executable = _init_bin(bin_path)
     cmdline = [executable, system, conf, out, bench]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
-    subprocess.check_call(cmdline, shell=False, stderr=logger, stdout=logger)
+    subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
 
 
 def _create_ini(logger, system, conf, out):
