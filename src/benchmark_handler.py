@@ -29,7 +29,7 @@ class Logger(object):
         self.info(msg)
 
     def _log(self, msg_type, msg):
-        self.f.send('{} {}'.format(msg_type, msg))
+        self.f.send('{} {}'.format(msg_type, msg.rstrip()))
 
 
 def _init_bin(bin_path):
