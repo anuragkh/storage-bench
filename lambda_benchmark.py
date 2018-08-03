@@ -90,6 +90,7 @@ def is_socket_valid(socket_instance):
 def run_server(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.settimeout(300)
     try:
         s.bind((host, port))
     except socket.error as ex:
@@ -98,6 +99,7 @@ def run_server(host, port):
     s.listen(0)
     print('Listening for function logs on {}:{}'.format(host, port))
     sock, address = s.accept()
+    sock.settimeout(300)
     print('Received connection from {}'.format(address))
     while is_socket_valid(sock):
         try:
