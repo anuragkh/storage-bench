@@ -22,6 +22,9 @@ class Logger(object):
     def error(self, msg):
         self._log('ERROR', msg)
 
+    def fileno(self):
+        return self.f.fileno()
+
     def write(self, msg):
         self.info(msg)
 
