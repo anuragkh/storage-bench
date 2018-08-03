@@ -70,7 +70,7 @@ class block_client {
   std::shared_ptr<apache::thrift::protocol::TProtocol> protocol_{};
   std::shared_ptr<thrift_client> client_{};
   int block_id_{-1};
-  int timeout_ms_;
+  int timeout_ms_{};
 };
 
 }

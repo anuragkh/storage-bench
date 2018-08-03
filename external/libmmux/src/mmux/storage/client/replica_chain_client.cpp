@@ -1,5 +1,7 @@
 #include "replica_chain_client.h"
 #include "../../utils/string_utils.h"
+#include "../manager/detail/block_name_parser.h"
+#include "../kv/kv_block.h"
 
 namespace mmux {
 namespace storage {
@@ -67,7 +69,7 @@ std::vector<std::string> replica_chain_client::run_command(int32_t cmd_id, const
 std::vector<std::string> replica_chain_client::run_command_redirected(int32_t cmd_id,
                                                                       const std::vector<std::string> &args) {
   auto args_copy = args;
-  args_copy.push_back("!redirected");
+  args_copy.emplace_back("!redirected");
   send_command(cmd_id, args_copy);
   return recv_response();
 }

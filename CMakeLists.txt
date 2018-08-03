@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(storage-bench C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -20,10 +20,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -pedantic -Wextra"
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -g -Wall -pedantic -Wextra")
 
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
-
-SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-SET(BUILD_SHARED_LIBS OFF)
-SET(CMAKE_EXE_LINKER_FLAGS "-static")
 
 include(Dependencies)
 
@@ -61,8 +57,6 @@ if (NOT USE_SYSTEM_CPP_REDIS)
 endif ()
 
 target_link_libraries(storage_bench
-        -static-libgcc
-        -static-libstdc++
         mmux
         ${JEMALLOC_LIBRARIES}
         ${Boost_LIBRARIES}

@@ -3,7 +3,6 @@
 
 #include <map>
 #include "block_client.h"
-#include "../kv/kv_block.h"
 
 namespace mmux {
 namespace storage {

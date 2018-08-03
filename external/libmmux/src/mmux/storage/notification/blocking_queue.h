@@ -7,8 +7,6 @@
 #include <mutex>
 #include <condition_variable>
 
-using namespace std::chrono_literals;
-
 namespace mmux {
 namespace storage {
 
@@ -19,7 +17,7 @@ class blocking_queue {
     std::unique_lock<std::mutex> mlock(mutex_);
     while (queue_.empty()) {
       if (timeout_ms != -1) {
-        if (cond_.wait_for(mlock, timeout_ms * 1ms) == std::cv_status::timeout) {
+        if (cond_.wait_for(mlock, timeout_ms * std::chrono::milliseconds(1)) == std::cv_status::timeout) {
           throw std::out_of_range("Timed out waiting for value");
         }
       } else {

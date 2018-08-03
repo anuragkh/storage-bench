@@ -4,6 +4,7 @@
 #include "../../directory/client/directory_client.h"
 #include "../../utils/client_cache.h"
 #include "replica_chain_client.h"
+#include "../kv/kv_block.h"
 
 namespace mmux {
 namespace storage {

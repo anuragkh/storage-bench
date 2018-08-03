@@ -2,10 +2,10 @@
 #define MMUX_LEASE_RENEWAL_WORKER_H
 
 #include <atomic>
-#include <shared_mutex>
 #include <string>
 #include <thread>
 #include <vector>
+#include <mutex>
 
 #include "lease_client.h"
 
@@ -24,7 +24,7 @@ class lease_renewal_worker {
   void remove_path(const std::string &path);
   bool has_path(const std::string &path);
  private:
-  mutable std::shared_mutex metadata_mtx_;
+  mutable std::mutex metadata_mtx_;
 
   std::thread worker_;
   std::atomic_bool stop_;
