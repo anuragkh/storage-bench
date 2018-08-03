@@ -101,13 +101,17 @@ def benchmark_handler(event, context):
         print('Exception: {}'.format(e))
         raise
 
-    logger.info('{}'.format(event))
+    logger.info('Event: {}, Context: {}'.format(event, context))
 
-    prefix = os.path.join('/tmp', system)
-    _create_ini(logger, system, conf, prefix + '.conf')
-    result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
-    for object_size in object_sizes:
-        _run_benchmark(logger, system, prefix + '.conf', prefix, str(object_size), bin_path)
-        for result_suffix in result_suffixes:
-            _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
+    try:
+        prefix = os.path.join('/tmp', system)
+        _create_ini(logger, system, conf, prefix + '.conf')
+        result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
+        for object_size in object_sizes:
+            _run_benchmark(logger, system, prefix + '.conf', prefix, str(object_size), bin_path)
+            for result_suffix in result_suffixes:
+                _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
+    except Exception as e:
+        logger.error(e)
+
     logger.close()
