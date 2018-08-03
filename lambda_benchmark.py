@@ -81,6 +81,7 @@ def invoke_locally(system, conf_file, host, port, bin_path, object_sizes):
                  object_sizes=object_sizes)
     function_process = Process(target=benchmark_handler.benchmark_handler, args=(event, None,))
     function_process.start()
+    return function_process
 
 
 def run_server(host, port):
@@ -146,12 +147,17 @@ if __name__ == '__main__':
         log_server_process = Process(target=run_server, args=(args.host, args.port))
         log_server_process.start()
         time.sleep(3)
+        p = None
         if args.invoke:
             print('Invoking function...')
             invoke(function_name, args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
             print('Done.')
         elif args.invoke_local:
             print('Invoking function locally...')
-            invoke_locally(args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
+            p = invoke_locally(args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
             print('Done.')
+
+        if p is not None:
+            p.join()
+
         log_server_process.join()

@@ -39,6 +39,9 @@ class Logger(object):
     def _log(self, msg_type, msg):
         self.f.send('{} {}'.format(msg_type, msg).rstrip())
 
+    def close(self):
+        self.f.close()
+
 
 def _init_bin(bin_path):
     if not os.path.exists('/tmp/bin'):
@@ -105,3 +108,4 @@ def benchmark_handler(event, context):
         _run_benchmark(logger, system, prefix + '.conf', prefix, str(object_size), bin_path)
         for result_suffix in result_suffixes:
             _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
+    logger.close()
