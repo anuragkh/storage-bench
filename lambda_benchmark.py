@@ -77,7 +77,8 @@ def invoke_function(name, system, conf_file, host, port):
 
 def invoke_function_locally(system, conf_file, host, port):
     event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port)
-    benchmark_handler.benchmark_handler(event, None)
+    p = Process(benchmark_handler.benchmark_handler, (event, None,))
+    p.start()
 
 
 def run_server(host, port):
@@ -158,10 +159,11 @@ if __name__ == '__main__':
     if args.invoke or args.invoke_local:
         p = Process(target=run_server, args=(args.host, args.port))
         p.start()
-        print('Invoking function...')
         if args.invoke:
+            print('Invoking function...')
             invoke_function(function_name, args.system, args.conf, args.host, args.port)
         elif args.invoke_local:
+            print('Invoking function locally...')
             invoke_function_locally(args.system, args.conf, args.host, args.port)
         print('Done.')
         p.join()

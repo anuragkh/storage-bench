@@ -26,6 +26,7 @@ def _init_bin(executable_name):
 
 
 def _copy_results(result):
+    print('Copying results @ {}'.format(result))
     bucket = boto3.resource('s3').Bucket('bench-results')
     with open(result, 'rb') as data:
         bucket.put_object(Key=result, Body=data)
@@ -34,6 +35,7 @@ def _copy_results(result):
 def _run_benchmark(system, conf, out, bench):
     _init_bin(EXECUTABLE)
     cmdline = [os.path.join(BIN_DIR, EXECUTABLE), system, conf, out, bench]
+    print('Running benchmark, cmd: {}'.format(cmdline))
     subprocess.check_call(cmdline, shell=False, stderr=subprocess.STDOUT)
 
 
@@ -44,6 +46,7 @@ def _create_ini(system, conf, out):
         config.set(system, key, conf[key])
     with open(out, 'w') as f:
         conf.write(f)
+    print('Created configuration file {}'.format(out))
 
 
 def _redirect_output(host, port):
@@ -63,6 +66,7 @@ def benchmark_handler(event, context):
 
     _redirect_output(host, port)
 
+    print('System: {}, conf: {}, log.host: {}, log.port: {}'.format(system, conf, host, port))
     prefix = os.path.join('/tmp', system)
     _create_ini(system, conf, prefix + '.conf')
     _run_benchmark(system, prefix + '.conf', prefix, 'sweep')
