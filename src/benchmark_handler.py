@@ -64,9 +64,14 @@ def benchmark_handler(event, context):
     host = event['host']
     port = event['port']
 
-    _redirect_output(host, port)
-
     print('System: {}, conf: {}, log.host: {}, log.port: {}'.format(system, conf, host, port))
+
+    try:
+        _redirect_output(host, port)
+    except Exception as e:
+        print('Exception: {}'.format(e))
+        raise
+    
     prefix = os.path.join('/tmp', system)
     _create_ini(system, conf, prefix + '.conf')
     _run_benchmark(system, prefix + '.conf', prefix, 'sweep')

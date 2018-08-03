@@ -113,7 +113,7 @@ def run_server(host, port):
                     # In Windows, sometimes when a TCP program closes abruptly,
                     # a "Connection reset by peer" exception will be thrown
                     data = sock.recv(receive_buf_size)
-                    print(data)
+                    print('[FUNCTION_LOG]'.format(data))
 
                 # client disconnected, so remove from socket list
                 except socket.error as ex:
