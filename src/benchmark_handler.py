@@ -8,6 +8,8 @@ import subprocess
 import boto3
 from six.moves import configparser
 
+from src.compat import b
+
 
 class NetworkFile(object):
     def __init__(self, f):
@@ -37,7 +39,7 @@ class Logger(object):
         return NetworkFile(self.f)
 
     def _log(self, msg_type, msg):
-        self.f.send('{} {}'.format(msg_type, msg).rstrip())
+        self.f.send(b('{} {}'.format(msg_type, msg).rstrip()))
 
     def close(self):
         self.f.send('CLOSE')
