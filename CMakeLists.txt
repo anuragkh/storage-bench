@@ -23,6 +23,7 @@ set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 SET(BUILD_SHARED_LIBS OFF)
+SET(CMAKE_EXE_LINKER_FLAGS "-static")
 
 include(Dependencies)
 
