@@ -8,12 +8,6 @@ import subprocess
 import boto3
 from six.moves import configparser
 
-LAMBDA_TASK_ROOT = os.environ.get('LAMBDA_TASK_ROOT', os.path.dirname(os.path.abspath(__file__)))
-CUR_BIN_DIR = os.path.join(LAMBDA_TASK_ROOT, 'bin')
-LIB_DIR = os.path.join(LAMBDA_TASK_ROOT, 'lib')
-BIN_DIR = '/tmp/bin'
-EXECUTABLE = 'storage_bench'
-
 
 class Logger(object):
     def __init__(self, f):
@@ -33,13 +27,15 @@ class Logger(object):
         self.f.flush()
 
 
-def _init_bin(executable_name):
-    if not os.path.exists(BIN_DIR):
-        os.makedirs(BIN_DIR)
-    cur_file = os.path.join(CUR_BIN_DIR, executable_name)
-    new_file = os.path.join(BIN_DIR, executable_name)
+def _init_bin(bin_path):
+    if not os.path.exists('/tmp/bin'):
+        os.makedirs('/tmp/bin')
+    bin_path = os.environ.get('LAMBDA_TASK_ROOT', bin_path)
+    cur_file = os.path.join(bin_path, 'storage_bench')
+    new_file = os.path.join('/tmp/bin', 'storage_bench')
     shutil.copy2(cur_file, new_file)
     os.chmod(new_file, 0o775)
+    return new_file
 
 
 def _copy_results(logger, result):
@@ -49,9 +45,9 @@ def _copy_results(logger, result):
         bucket.put_object(Key=result, Body=data)
 
 
-def _run_benchmark(logger, system, conf, out, bench):
-    _init_bin(EXECUTABLE)
-    cmdline = [os.path.join(BIN_DIR, EXECUTABLE), system, conf, out, bench]
+def _run_benchmark(logger, system, conf, out, bench, bin_path):
+    executable = _init_bin(bin_path)
+    cmdline = [executable, system, conf, out, bench]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     subprocess.check_call(cmdline, shell=False, stderr=subprocess.STDOUT)
 
@@ -77,6 +73,7 @@ def benchmark_handler(event, context):
     conf = event['conf']
     host = event['host']
     port = event['port']
+    bin_path = event['bin_path']
 
     try:
         logger = _connect_logger(host, port)
@@ -88,4 +85,4 @@ def benchmark_handler(event, context):
 
     prefix = os.path.join('/tmp', system)
     _create_ini(logger, system, conf, prefix + '.conf')
-    _run_benchmark(logger, system, prefix + '.conf', prefix, 'sweep')
+    _run_benchmark(logger, system, prefix + '.conf', prefix, 'sweep', bin_path)

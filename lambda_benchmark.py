@@ -133,6 +133,8 @@ if __name__ == '__main__':
     parser.add_argument('--conf', type=str, default='conf/storage_bench.conf', help='configuration file')
     parser.add_argument('--host', type=str, default=socket.gethostname(), help='name of host where script is run')
     parser.add_argument('--port', type=int, default=8888, help='port that server listens on')
+    parser.add_argument('--bin-path', type=str, default='build',
+                        help='location of storage_bench executable (local mode only)')
     args = parser.parse_args()
     function_name = "StorageBenchmark"
 
