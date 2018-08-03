@@ -67,8 +67,8 @@ def parse_ini(system, conf_file):
     return dict(config.items(system))
 
 
-def invoke_function(name, system, conf_file, host, port):
-    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port)
+def invoke_function(name, system, conf_file, host, port, bin_path):
+    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path)
     lambda_client.invoke(
         FunctionName=name,
         InvocationType='Event',
@@ -76,8 +76,8 @@ def invoke_function(name, system, conf_file, host, port):
     )
 
 
-def invoke_function_locally(system, conf_file, host, port):
-    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port)
+def invoke_function_locally(system, conf_file, host, port, bin_path):
+    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path)
     function_process = Process(target=benchmark_handler.benchmark_handler, args=(event, None,))
     function_process.start()
 
@@ -165,10 +165,10 @@ if __name__ == '__main__':
         time.sleep(3)
         if args.invoke:
             print('Invoking function...')
-            invoke_function(function_name, args.system, args.conf, args.host, args.port)
+            invoke_function(function_name, args.system, args.conf, args.host, args.port, args.bin_path)
             print('Done.')
         elif args.invoke_local:
             print('Invoking function locally...')
-            invoke_function_locally(args.system, args.conf, args.host, args.port)
+            invoke_function_locally(args.system, args.conf, args.host, args.port, args.bin_path)
             print('Done.')
         log_server_process.join()
