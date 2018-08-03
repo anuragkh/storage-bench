@@ -7,6 +7,7 @@ import os
 import select
 import socket
 import sys
+import time
 from multiprocessing import Process
 
 import boto3
@@ -159,6 +160,7 @@ if __name__ == '__main__':
     if args.invoke or args.invoke_local:
         log_server_process = Process(target=run_server, args=(args.host, args.port))
         log_server_process.start()
+        time.sleep(3)
         if args.invoke:
             print('Invoking function...')
             invoke_function(function_name, args.system, args.conf, args.host, args.port)
