@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import errno
 import json
 import multiprocessing
 import os
@@ -84,6 +85,28 @@ def invoke_locally(system, conf_file, host, port, bin_path, object_sizes):
     return function_process
 
 
+def is_socket_valid(socket_instance):
+    """ Return True if this socket is connected. """
+    if not socket_instance:
+        return False
+
+    try:
+        socket_instance.getsockname()
+    except socket.error as err:
+        err_type = err.args[0]
+        if err_type == errno.EBADF:
+            return False
+
+    try:
+        socket_instance.getpeername()
+    except socket.error as err:
+        err_type = err.args[0]
+        if err_type in [errno.EBADF, errno.ENOTCONN]:
+            return False
+
+    return True
+
+
 def run_server(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -96,7 +119,7 @@ def run_server(host, port):
     print('Listening for function logs on {}:{}'.format(host, port))
     sock, address = s.accept()
     print('Received connection from {}'.format(address))
-    while True:
+    while is_socket_valid(sock):
         try:
             data = sock.recv(4096).rstrip().lstrip()
             if data == 'CLOSE':
