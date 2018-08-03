@@ -93,7 +93,7 @@ def run_server(host, port):
         print('Bind failed: {}'.format(ex))
         sys.exit()
     s.listen(10)
-    print('Listening for function logs')
+    print('Listening for function logs on {}:{}'.format(host, port))
 
     address = None
     while True:
