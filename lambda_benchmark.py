@@ -151,13 +151,12 @@ if __name__ == '__main__':
         if args.invoke:
             print('Invoking function...')
             invoke(function_name, args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
-            print('Done.')
         elif args.invoke_local:
             print('Invoking function locally...')
             p = invoke_locally(args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
-            print('Done.')
 
         if p is not None:
             p.join()
+            print('Local function execution completed')
 
         log_server_process.join()

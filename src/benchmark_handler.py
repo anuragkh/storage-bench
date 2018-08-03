@@ -40,6 +40,7 @@ class Logger(object):
         self.f.send('{} {}'.format(msg_type, msg).rstrip())
 
     def close(self):
+        self.f.send('Closing logger connection...')
         self.f.close()
 
 
