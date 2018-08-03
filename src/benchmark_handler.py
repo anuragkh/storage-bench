@@ -62,7 +62,7 @@ def _create_ini(logger, system, conf, out):
     for key in conf.keys():
         config.set(system, key, conf[key])
     with open(out, 'w') as f:
-        conf.write(f)
+        config.write(f)
     logger.info('Created configuration file {}'.format(out))
 
 
