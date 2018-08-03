@@ -83,9 +83,6 @@ def invoke_function_locally(system, conf_file, host, port, bin_path):
 
 
 def run_server(host, port):
-    connections = []
-    receive_buf_size = 4096
-
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
@@ -93,36 +90,19 @@ def run_server(host, port):
     except socket.error as ex:
         print('Bind failed: {}'.format(ex))
         sys.exit()
-    s.listen(10)
+    s.listen(0)
     print('Listening for function logs on {}:{}'.format(host, port))
-
-    address = None
+    sock, address = s.accept()
+    print('Received connection from {}'.format(address))
     while True:
-        read_sockets, write_sockets, error_sockets = select.select(connections, [], [])
-        for sock in read_sockets:
-            # New connection
-            if sock == s:
-                # Handle the case in which there is a new connection recieved through server_socket
-                sock, address = s.accept()
-                connections.append(sock)
-                print("Function @ {} connected".format(address))
-
-            # Some incoming message from a client
-            else:
-                # Data received from client, process it
-                try:
-                    # In Windows, sometimes when a TCP program closes abruptly,
-                    # a "Connection reset by peer" exception will be thrown
-                    data = sock.recv(receive_buf_size)
-                    print('[FUNCTION_LOG]'.format(data))
-
-                # client disconnected, so remove from socket list
-                except socket.error as ex:
-                    print("Function @ {} is offline: {}".format(address, ex))
-                    sock.close()
-                    connections.remove(sock)
-                    continue
-
+        try:
+            data = sock.recv(4096)
+            print('FUNCTION_LOG {}'.format(data))
+        except socket.error as ex:
+            print("Function @ {} is offline: {}".format(address, ex))
+            sock.close()
+            break
+    s.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run storage benchmark on AWS Lambda.')

@@ -23,7 +23,7 @@ class Logger(object):
         self._log('ERROR', msg)
 
     def _log(self, msg_type, msg):
-        self.f.write('{} {}'.format(msg_type, msg))
+        self.f.send('{} {}'.format(msg_type, msg))
         self.f.flush()
 
 
@@ -65,7 +65,7 @@ def _create_ini(logger, system, conf, out):
 def _connect_logger(host, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
-    return Logger(sock.makefile('w'))
+    return Logger(sock)
 
 
 def benchmark_handler(event, context):
