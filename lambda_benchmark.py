@@ -66,8 +66,9 @@ def parse_ini(system, conf_file):
     return dict(config.items(system))
 
 
-def invoke_function(name, system, conf_file, host, port, bin_path):
-    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path)
+def invoke(name, system, conf_file, host, port, bin_path, object_sizes):
+    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path,
+                 object_sizes=object_sizes)
     lambda_client.invoke(
         FunctionName=name,
         InvocationType='Event',
@@ -75,8 +76,9 @@ def invoke_function(name, system, conf_file, host, port, bin_path):
     )
 
 
-def invoke_function_locally(system, conf_file, host, port, bin_path):
-    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path)
+def invoke_locally(system, conf_file, host, port, bin_path, object_sizes):
+    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path,
+                 object_sizes=object_sizes)
     function_process = Process(target=benchmark_handler.benchmark_handler, args=(event, None,))
     function_process.start()
 
@@ -114,8 +116,8 @@ if __name__ == '__main__':
     parser.add_argument('--conf', type=str, default='conf/storage_bench.conf', help='configuration file')
     parser.add_argument('--host', type=str, default=socket.gethostname(), help='name of host where script is run')
     parser.add_argument('--port', type=int, default=8888, help='port that server listens on')
-    parser.add_argument('--bin-path', type=str, default='build',
-                        help='location of storage_bench executable (local mode only)')
+    parser.add_argument('--bin-path', type=str, default='build', help='location of executable (local mode only)')
+    parser.add_argument('--object-sizes', nargs='+', help='object sizes to benchmark for')
     args = parser.parse_args()
     function_name = "StorageBenchmark"
 
@@ -146,10 +148,10 @@ if __name__ == '__main__':
         time.sleep(3)
         if args.invoke:
             print('Invoking function...')
-            invoke_function(function_name, args.system, args.conf, args.host, args.port, args.bin_path)
+            invoke(function_name, args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
             print('Done.')
         elif args.invoke_local:
             print('Invoking function locally...')
-            invoke_function_locally(args.system, args.conf, args.host, args.port, args.bin_path)
+            invoke_locally(args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
             print('Done.')
         log_server_process.join()

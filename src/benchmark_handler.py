@@ -82,11 +82,13 @@ def _connect_logger(host, port):
 
 
 def benchmark_handler(event, context):
-    system = event['system']
-    conf = event['conf']
-    host = event['host']
-    port = event['port']
-    bin_path = event['bin_path']
+    system = event.get('system')
+    conf = event.get('conf')
+    host = event.get('host')
+    port = int(event.get('port'))
+    bin_path = event.get('bin_path', '.')
+    object_sizes = [8, 32, 128, 512, 2048, 8192, 32768, 131072, 524288, 2097152, 8388608, 33554432, 134217728]
+    object_sizes = event.get('object_sizes', object_sizes)
 
     try:
         logger = _connect_logger(host, port)
@@ -98,8 +100,8 @@ def benchmark_handler(event, context):
 
     prefix = os.path.join('/tmp', system)
     _create_ini(logger, system, conf, prefix + '.conf')
-    _run_benchmark(logger, system, prefix + '.conf', prefix, 'sweep', bin_path)
-    object_sizes = [8, 32, 128, 512, 2048, 8192, 32768, 131072, 524288, 2097152, 8388608, 33554432, 134217728]
     result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
-    for object_size, result_suffix in zip(object_sizes, result_suffixes):
-        _copy_results(logger, prefix + str(object_size) + result_suffix)
+    for object_size in object_sizes:
+        _run_benchmark(logger, system, prefix + '.conf', prefix, str(object_size), bin_path)
+        for result_suffix in result_suffixes:
+            _copy_results(logger, prefix + str(object_size) + result_suffix)
