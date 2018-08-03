@@ -98,7 +98,7 @@ def run_server(host, port):
     print('Received connection from {}'.format(address))
     while True:
         try:
-            data = sock.recv(4096).rstrip()
+            data = sock.recv(4096).rstrip().lstrip()
             if data == 'CLOSE':
                 print('Function @ {} finished execution'.format(address))
                 break
@@ -160,6 +160,6 @@ if __name__ == '__main__':
 
         if p is not None:
             p.join()
-            print('Local function execution completed')
+            print('Local function process terminated')
 
         log_server_process.join()
