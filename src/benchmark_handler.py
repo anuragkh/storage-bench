@@ -96,7 +96,7 @@ def benchmark_handler(event, context):
         print('Exception: {}'.format(e))
         raise
 
-    logger.info('System: {}, conf: {}, logger.host: {}, logger.port: {}'.format(system, conf, host, port))
+    logger.info('event'.format(event))
 
     prefix = os.path.join('/tmp', system)
     _create_ini(logger, system, conf, prefix + '.conf')
@@ -104,4 +104,4 @@ def benchmark_handler(event, context):
     for object_size in object_sizes:
         _run_benchmark(logger, system, prefix + '.conf', prefix, str(object_size), bin_path)
         for result_suffix in result_suffixes:
-            _copy_results(logger, prefix + str(object_size) + result_suffix)
+            _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
