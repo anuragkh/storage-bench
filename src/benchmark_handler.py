@@ -24,7 +24,6 @@ class Logger(object):
 
     def _log(self, msg_type, msg):
         self.f.send('{} {}'.format(msg_type, msg))
-        self.f.flush()
 
 
 def _init_bin(bin_path):
