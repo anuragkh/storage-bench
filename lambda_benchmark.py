@@ -30,7 +30,16 @@ def create_role():
                 "Principal": {
                     "Service": "lambda.amazonaws.com"
                 },
-                "Action": "sts:AssumeRole"
+                "Action": [
+                    "sts:AssumeRole",
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents",
+                    "logs:DescribeLogStreams"
+                ],
+                "Resource": [
+                    "arn:aws:logs:*:*:*"
+                ]
             }
         ]
     }
