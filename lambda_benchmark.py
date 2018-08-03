@@ -77,8 +77,8 @@ def invoke_function(name, system, conf_file, host, port):
 
 def invoke_function_locally(system, conf_file, host, port):
     event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port)
-    p = Process(target=benchmark_handler.benchmark_handler, args=(event, None,))
-    p.start()
+    function_process = Process(target=benchmark_handler.benchmark_handler, args=(event, None,))
+    function_process.start()
 
 
 def run_server(host, port):
