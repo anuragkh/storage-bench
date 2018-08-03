@@ -73,10 +73,10 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
   iface->destroy();
   std::cerr << "Destroyed storage interface." << std::endl;
 
-  std::cerr << "Read latency results written to " << absolute_path(output_path + "_read_latency.txt");
-  std::cerr << "Write latency written to " << absolute_path(output_path + "_write_latency.txt");
-  std::cerr << "Read throughput results written to " << absolute_path(output_path + "_read_throughput.txt");
-  std::cerr << "Write throughput results written to " << absolute_path(output_path + "_write_throughput.txt");
+  std::cerr << "Read latency results => " << absolute_path(output_path + "_read_latency.txt") << std::endl;
+  std::cerr << "Write latency results => " << absolute_path(output_path + "_write_latency.txt") << std::endl;
+  std::cerr << "Read throughput results => " << absolute_path(output_path + "_read_throughput.txt") << std::endl;
+  std::cerr << "Write throughput results => " << absolute_path(output_path + "_write_throughput.txt") << std::endl;
 
   lr.close();
   lw.close();

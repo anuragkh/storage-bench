@@ -6,7 +6,11 @@
 #include "benchmark.h"
 
 #ifndef NUM_OPS
-#define NUM_OPS 1000
+#define NUM_OPS 1000ULL
+#endif
+
+#ifndef MAX_DATASET_SIZE
+#define MAX_DATASET_SIZE 8589934592
 #endif
 
 #ifndef VALUE_SIZE_MIN
@@ -52,7 +56,11 @@ int main(int argc, char **argv) {
 
   for (auto value_size: value_sizes) {
     std::string benchmark_output_prefix = output_file_prefix + "_" + std::to_string(value_size);
-    benchmark::run(iface, benchmark_output_prefix, value_size, NUM_OPS, conf.get_child(system));
+    benchmark::run(iface,
+                   benchmark_output_prefix,
+                   value_size,
+                   std::min(NUM_OPS, static_cast<unsigned long long>(MAX_DATASET_SIZE / value_size)),
+                   conf.get_child(system));
   }
 
   return 0;
