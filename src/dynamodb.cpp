@@ -37,7 +37,7 @@ void dynamodb::init(const property_map &conf) {
   ProvisionedThroughput provisionedThroughput;
 
   auto table_name = conf.get<std::string>("table_name", "test") + "." + random_string(10);
-  m_table_name = Aws::String(table_name);
+  m_table_name = Aws::String(table_name.data());
 
   provisionedThroughput.SetReadCapacityUnits(conf.get<long long>("read_capacity", 10000));
   provisionedThroughput.SetWriteCapacityUnits(conf.get<long long>("write_capacity", 10000));
@@ -102,7 +102,7 @@ std::string dynamodb::read(const std::string &key) {
   if (!outcome.IsSuccess()) {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
-  return std::string(outcome.GetResult().GetItem().at(HASH_KEY_NAME).GetS());
+  return std::string(outcome.GetResult().GetItem().at(HASH_KEY_NAME).GetS().data());
 }
 
 void dynamodb::destroy() {
@@ -112,7 +112,7 @@ void dynamodb::destroy() {
   auto deleteTableOutcome = m_client->DeleteTable(deleteTableRequest);
 
   if (!deleteTableOutcome.IsSuccess()) {
-    // It's okay if the table has already beed deleted
+    // It's okay if the table has already been deleted
     if (deleteTableOutcome.GetError().GetErrorType() == DynamoDBErrors::RESOURCE_NOT_FOUND) {
       std::cerr << "Could not delete table " << m_table_name << ": table not found" << std::endl;
     } else {

@@ -15,7 +15,6 @@ void redis::init(const storage_interface::property_map &conf) {
 }
 
 void redis::write(const std::string &key, const std::string &value) {
-  std::cout << "Writing " << key << ", " << value << std::endl;
   auto fut = m_client->set(key, value);
   m_client->sync_commit();
   auto reply = fut.get();
@@ -32,7 +31,6 @@ std::string redis::read(const std::string &key) {
     throw std::runtime_error(reply.error());
   }
   auto value = reply.as_string();
-  std::cout << "Read " << key << ", " << value << std::endl;
   return value;
 }
 
