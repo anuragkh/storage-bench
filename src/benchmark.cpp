@@ -25,6 +25,23 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
   std::cerr << "Initializing storage interface..." << std::endl;
   iface->init(conf);
 
+  // Warmup
+  std::cerr << "Warmup writes..." << std::endl;
+  size_t warmup_ops = num_ops / 10;
+  for (size_t i = 0; i < warmup_ops; i++) {
+    try {
+      iface->write(std::to_string(i + num_ops), value);
+    } catch (std::runtime_error &e) {
+      std::cerr << "WriteOpFailed: " << e.what() << std::endl;
+      --i;
+      ++err_count;
+      if (err_count > ERROR_MAX) {
+        std::cerr << "Too many errors" << std::endl;
+        exit(-1);
+      }
+    }
+  }
+
   std::cerr << "Starting writes..." << std::endl;
   auto w_begin = now_us();
   for (size_t i = 0; i < num_ops; ++i) {
@@ -44,8 +61,22 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
     lw << (t_e - t_b) << std::endl;
   }
   auto w_end = now_us();
-  std::cerr << "Finished writes, starting reads..." << std::endl;
+  std::cerr << "Finished writes, warmup reads..." << std::endl;
   err_count = 0;
+  for (size_t i = 0; i < warmup_ops; i++) {
+    try {
+      iface->read(std::to_string(i + num_ops));
+    } catch (std::runtime_error &e) {
+      std::cerr << "WriteOpFailed: " << e.what() << std::endl;
+      --i;
+      ++err_count;
+      if (err_count > ERROR_MAX) {
+        std::cerr << "Too many errors" << std::endl;
+        exit(-1);
+      }
+    }
+  }
+  std::cerr << "Starting reads..." << std::endl;
   auto r_begin = now_us();
   for (size_t i = 0; i < num_ops; ++i) {
     auto t_b = now_us();
