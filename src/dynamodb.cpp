@@ -45,9 +45,7 @@ void dynamodb::init(const property_map &conf) {
   createTableRequest.WithTableName(m_table_name);
 
   CreateTableOutcome createTableOutcome = m_client->CreateTable(createTableRequest);
-  if (createTableOutcome.IsSuccess()) {
-    std::cerr << "Successfully created table " << m_table_name << std::endl;
-  } else {
+  if (!createTableOutcome.IsSuccess()) {
     std::cerr << "Error creating table " << m_table_name << ":" << createTableOutcome.GetError().GetMessage()
               << std::endl;
     exit(-1);
