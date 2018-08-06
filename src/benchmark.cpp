@@ -106,18 +106,13 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
   tw << (static_cast<double>(num_ops) / w_elapsed_s) << std::endl;
   tr << (static_cast<double>(num_ops) / r_elapsed_s) << std::endl;
 
-  iface->destroy();
-  std::cerr << "Destroyed storage interface." << std::endl;
-
-  std::cerr << "Read latency results => " << absolute_path(output_path + "_read_latency.txt") << std::endl;
-  std::cerr << "Write latency results => " << absolute_path(output_path + "_write_latency.txt") << std::endl;
-  std::cerr << "Read throughput results => " << absolute_path(output_path + "_read_throughput.txt") << std::endl;
-  std::cerr << "Write throughput results => " << absolute_path(output_path + "_write_throughput.txt") << std::endl;
-
   lr.close();
   lw.close();
   tr.close();
   tw.close();
+
+  iface->destroy();
+  std::cerr << "Destroyed storage interface." << std::endl;
 }
 
 uint64_t benchmark::now_us() {

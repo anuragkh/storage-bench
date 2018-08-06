@@ -171,8 +171,11 @@ def _init_bin(bin_path):
 def _copy_results(logger, result):
     logger.info('Copying results @ {} to S3...'.format(result))
     bucket = boto3.resource('s3').Bucket('bench-results')
-    with open(result, 'rb') as data:
-        bucket.put_object(Key=result, Body=data)
+    if os.path.isfile(result):
+        with open(result, 'rb') as data:
+            bucket.put_object(Key=result, Body=data)
+    else:
+        logger.warn('Result {} not found'.format(result))
 
 
 def _run_benchmark(logger, system, conf, out, bench, bin_path):
@@ -206,6 +209,7 @@ def benchmark_handler(event, context):
     bin_path = event.get('bin_path', '.')
     object_sizes = [8, 32, 128, 512, 2048, 8192, 32768, 131072, 524288, 2097152, 8388608, 33554432, 134217728]
     object_sizes = event.get('object_sizes', object_sizes)
+    result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
 
     try:
         logger = _connect_logger(host, port)
@@ -218,12 +222,14 @@ def benchmark_handler(event, context):
     try:
         prefix = os.path.join('/tmp', system)
         _create_ini(logger, system, conf, prefix + '.conf')
-        result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
         for object_size in object_sizes:
             _run_benchmark(logger, system, prefix + '.conf', prefix, str(object_size), bin_path)
-            for result_suffix in result_suffixes:
-                _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
     except Exception as e:
         logger.error(e)
+    finally:
+        prefix = os.path.join('/tmp', system)
+        for object_size in object_sizes:
+            for result_suffix in result_suffixes:
+                _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
 
     logger.close()
