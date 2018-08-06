@@ -121,19 +121,7 @@ void dynamodb::destroy() {
     return;
   }
 
-  DescribeTableRequest describeTableRequest;
-  describeTableRequest.SetTableName(m_table_name);
-  while (true) {
-    auto outcome = m_client->DescribeTable(describeTableRequest);
-    if (outcome.IsSuccess() && outcome.GetResult().GetTable().GetTableStatus() == TableStatus::DELETING) {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-    } else if (outcome.GetError().GetErrorType() == DynamoDBErrors::RESOURCE_NOT_FOUND) {
-      break;
-    } else {
-      std::cerr << "Unexpected control sequence" << std::endl;
-      std::exit(-1);
-    }
-  }
+  // Don't wait for actual deletion.
 
   Aws::ShutdownAPI(m_options);
 }
