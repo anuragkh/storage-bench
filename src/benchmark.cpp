@@ -32,7 +32,6 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
     try {
       iface->write(std::to_string(i + num_ops), value);
     } catch (std::runtime_error &e) {
-      std::cerr << "WriteOpFailed: " << e.what() << std::endl;
       --i;
       ++err_count;
       if (err_count > ERROR_MAX) {
@@ -49,7 +48,6 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
     try {
       iface->write(std::to_string(i), value);
     } catch (std::runtime_error &e) {
-      std::cerr << "WriteOpFailed: " << e.what() << std::endl;
       --i;
       ++err_count;
       if (err_count > ERROR_MAX) {
@@ -67,7 +65,6 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
     try {
       iface->read(std::to_string(i + num_ops));
     } catch (std::runtime_error &e) {
-      std::cerr << "WriteOpFailed: " << e.what() << std::endl;
       --i;
       ++err_count;
       if (err_count > ERROR_MAX) {
