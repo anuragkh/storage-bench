@@ -36,6 +36,8 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
       ++err_count;
       if (err_count > ERROR_MAX) {
         std::cerr << "Too many errors" << std::endl;
+        iface->destroy();
+        std::cerr << "Destroyed storage interface." << std::endl;
         exit(-1);
       }
     }
@@ -52,6 +54,8 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
       ++err_count;
       if (err_count > ERROR_MAX) {
         std::cerr << "Too many errors" << std::endl;
+        iface->destroy();
+        std::cerr << "Destroyed storage interface." << std::endl;
         exit(-1);
       }
     }
@@ -69,6 +73,8 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
       ++err_count;
       if (err_count > ERROR_MAX) {
         std::cerr << "Too many errors" << std::endl;
+        iface->destroy();
+        std::cerr << "Destroyed storage interface." << std::endl;
         exit(-1);
       }
     }
@@ -84,6 +90,8 @@ void benchmark::run(const std::shared_ptr<storage_interface> &iface,
       ++err_count;
       if (err_count > ERROR_MAX) {
         std::cerr << "Too many errors" << std::endl;
+        iface->destroy();
+        std::cerr << "Destroyed storage interface." << std::endl;
         exit(-1);
       }
     }
