@@ -28,7 +28,7 @@ void s3::init(const storage_interface::property_map &conf) {
 
   // Create the bucket
   auto bucket_name = conf.get<std::string>("bucket_name", "test") + "." + random_string(10);
-  m_bucket_name = Aws::String(bucket_name);
+  m_bucket_name = Aws::String(bucket_name.data());
 
   CreateBucketRequest createBucketRequest;
   createBucketRequest.SetBucket(m_bucket_name);

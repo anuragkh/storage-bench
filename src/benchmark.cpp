@@ -4,12 +4,6 @@
 #include <chrono>
 #include "benchmark.h"
 
-std::string absolute_path(const std::string &path) {
-  char full_path[PATH_MAX];
-  realpath(path.c_str(), full_path);
-  return std::string(full_path);
-}
-
 void benchmark::run(const std::shared_ptr<storage_interface> &iface,
                     const std::string &output_path,
                     size_t value_size,
