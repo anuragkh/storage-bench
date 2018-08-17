@@ -27,14 +27,17 @@ void s3::init(const storage_interface::property_map &conf) {
   m_client = Aws::MakeShared<S3Client>("S3Benchmark", config);
 
   // Create the bucket
-  auto bucket_name = conf.get<std::string>("bucket_name", "test") + "." + random_string(10);
+  auto bucket_name = conf.get<std::string>("bucket_name", "test");
+  if (bucket_name == "test") {
+    bucket_name += (std::string(".") + random_string(10));
+  }
   m_bucket_name = Aws::String(bucket_name.data());
 
-  CreateBucketRequest createBucketRequest;
-  createBucketRequest.SetBucket(m_bucket_name);
-  createBucketRequest.SetACL(BucketCannedACL::private_);
+  CreateBucketRequest request;
+  request.SetBucket(m_bucket_name);
+  request.SetACL(BucketCannedACL::private_);
 
-  auto outcome = m_client->CreateBucket(createBucketRequest);
+  auto outcome = m_client->CreateBucket(request);
   if (!outcome.IsSuccess()) {
     std::cerr << "Failed to create bucket " << bucket_name << ": " << outcome.GetError().GetMessage() << std::endl;
     exit(-1);
@@ -43,48 +46,47 @@ void s3::init(const storage_interface::property_map &conf) {
 }
 
 void s3::write(const std::string &key, const std::string &value) {
-  Aws::S3::Model::PutObjectRequest object_request;
-  object_request.WithBucket(m_bucket_name).WithKey(key.c_str());
+  Aws::S3::Model::PutObjectRequest request;
+  request.WithBucket(m_bucket_name).WithKey(key.c_str());
 
   Aws::Utils::Stream::SimpleStreamBuf sbuf;
   auto out = Aws::MakeShared<Aws::IOStream>("StreamBuf", &sbuf);
   out->write(value.c_str(), value.length());
   out->seekg(0, std::ios_base::beg);
-  object_request.SetBody(out);
-  auto put_object_outcome = m_client->PutObject(object_request);
-  if (!put_object_outcome.IsSuccess()) {
-    throw std::runtime_error(put_object_outcome.GetError().GetMessage().c_str());
+  request.SetBody(out);
+  auto outcome = m_client->PutObject(request);
+  if (!outcome.IsSuccess()) {
+    throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
 }
 
 std::string s3::read(const std::string &key) {
-  Aws::S3::Model::GetObjectRequest object_request;
-  object_request.WithBucket(m_bucket_name).WithKey(key.c_str());
+  Aws::S3::Model::GetObjectRequest request;
+  request.WithBucket(m_bucket_name).WithKey(key.c_str());
 
-  auto get_object_outcome = m_client->GetObject(object_request);
-  if (!get_object_outcome.IsSuccess()) {
-    throw std::runtime_error(get_object_outcome.GetError().GetMessage().c_str());
+  auto outcome = m_client->GetObject(request);
+  if (!outcome.IsSuccess()) {
+    throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
-  auto in = std::make_shared<Aws::IOStream>(get_object_outcome.GetResult().GetBody().rdbuf());
+  auto in = std::make_shared<Aws::IOStream>(outcome.GetResult().GetBody().rdbuf());
   return std::string(std::istreambuf_iterator<char>(*in), std::istreambuf_iterator<char>());
 }
 
 void s3::destroy() {
-  HeadBucketRequest headBucketRequest;
-  headBucketRequest.SetBucket(m_bucket_name);
-  HeadBucketOutcome bucketOutcome = m_client->HeadBucket(headBucketRequest);
+  HeadBucketRequest request1;
+  request1.SetBucket(m_bucket_name);
+  HeadBucketOutcome outcome1 = m_client->HeadBucket(request1);
 
-  if (bucketOutcome.IsSuccess()) {
+  if (outcome1.IsSuccess()) {
     empty_bucket();
 
-    DeleteBucketRequest deleteBucketRequest;
-    deleteBucketRequest.SetBucket(m_bucket_name);
+    DeleteBucketRequest request2;
+    request2.SetBucket(m_bucket_name);
 
-    DeleteBucketOutcome deleteBucketOutcome = m_client->DeleteBucket(deleteBucketRequest);
-    if (!deleteBucketOutcome.IsSuccess()) {
-      std::cerr << "Failed to delete bucket " << m_bucket_name << ": " << deleteBucketOutcome.GetError().GetMessage()
-                << std::endl;
-      exit(-1);
+    DeleteBucketOutcome outcome2 = m_client->DeleteBucket(request2);
+    if (!outcome2.IsSuccess()) {
+      std::cerr << "Failed to delete bucket " << m_bucket_name << ": " << outcome2.GetError().GetMessage() << std::endl;
+      exit(1);
     }
   }
 
@@ -92,38 +94,38 @@ void s3::destroy() {
 }
 
 void s3::empty_bucket() {
-  ListObjectsRequest listObjectsRequest;
-  listObjectsRequest.SetBucket(m_bucket_name);
+  ListObjectsRequest request1;
+  request1.SetBucket(m_bucket_name);
 
-  ListObjectsOutcome listObjectsOutcome = m_client->ListObjects(listObjectsRequest);
+  ListObjectsOutcome outcome1 = m_client->ListObjects(request1);
 
-  if (!listObjectsOutcome.IsSuccess())
+  if (!outcome1.IsSuccess())
     return;
 
-  for (const auto &object : listObjectsOutcome.GetResult().GetContents()) {
-    DeleteObjectRequest deleteObjectRequest;
-    deleteObjectRequest.SetBucket(m_bucket_name);
-    deleteObjectRequest.SetKey(object.GetKey());
-    m_client->DeleteObject(deleteObjectRequest);
+  for (const auto &object : outcome1.GetResult().GetContents()) {
+    DeleteObjectRequest request2;
+    request2.SetBucket(m_bucket_name);
+    request2.SetKey(object.GetKey());
+    m_client->DeleteObject(request2);
   }
 
   wait_for_bucket_to_empty();
 }
 
 void s3::wait_for_bucket_to_empty() {
-  ListObjectsRequest listObjectsRequest;
-  listObjectsRequest.SetBucket(m_bucket_name);
+  ListObjectsRequest request;
+  request.SetBucket(m_bucket_name);
 
   unsigned checkForObjectsCount = 0;
   while (checkForObjectsCount++ < TIMEOUT_MAX) {
-    ListObjectsOutcome listObjectsOutcome = m_client->ListObjects(listObjectsRequest);
-    if (!listObjectsOutcome.IsSuccess()) {
-      std::cerr << "Failed to list objects on bucket " << m_bucket_name << ": "
-                << listObjectsOutcome.GetError().GetMessage() << std::endl;
-      std::exit(-1);
+    ListObjectsOutcome outcome = m_client->ListObjects(request);
+    if (!outcome.IsSuccess()) {
+      std::cerr << "Failed to list objects on bucket " << m_bucket_name << ": " << outcome.GetError().GetMessage()
+                << std::endl;
+      std::exit(1);
     }
 
-    if (!listObjectsOutcome.GetResult().GetContents().empty()) {
+    if (!outcome.GetResult().GetContents().empty()) {
       std::this_thread::sleep_for(std::chrono::seconds(1));
     } else {
       break;
@@ -135,11 +137,10 @@ bool s3::wait_for_bucket_to_propagate() {
   unsigned timeoutCount = 0;
   while (timeoutCount++ < TIMEOUT_MAX)
   {
-    HeadBucketRequest headBucketRequest;
-    headBucketRequest.SetBucket(m_bucket_name);
-    HeadBucketOutcome headBucketOutcome = m_client->HeadBucket(headBucketRequest);
-    if (headBucketOutcome.IsSuccess())
-    {
+    HeadBucketRequest request;
+    request.SetBucket(m_bucket_name);
+    HeadBucketOutcome outcome = m_client->HeadBucket(request);
+    if (outcome.IsSuccess()) {
       return true;
     }
 

@@ -15,11 +15,16 @@ int main(int argc, char **argv) {
   std::string conf_file = argv[2];
   std::string result_prefix = argv[3];
   size_t value_size = std::stoull(argv[4]);
-  int32_t mode = BENCHMARK_READ | BENCHMARK_WRITE;
-  if (!strcmp(argv[5], "read")) {
-    mode = BENCHMARK_READ;
-  } else if (!strcmp(argv[5], "write")) {
-    mode = BENCHMARK_WRITE;
+  int32_t mode = 0;
+  std::string m(argv[5]);
+  if (m.find("read") != std::string::npos) {
+    mode |= BENCHMARK_READ;
+  }
+  if (m.find("write") != std::string::npos) {
+    mode |= BENCHMARK_WRITE;
+  }
+  if (m.find("destroy") != std::string::npos) {
+    mode |= BENCHMARK_DESTROY;
   }
   size_t n_ops = std::stoull(argv[6]);
   bool warm_up = static_cast<bool>(std::stod(argv[7]));

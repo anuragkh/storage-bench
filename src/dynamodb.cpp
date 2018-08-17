@@ -26,77 +26,85 @@ void dynamodb::init(const property_map &conf) {
   ClientConfiguration config;
   m_client = Aws::MakeShared<DynamoDBClient>("DynamoDBBenchmark", config);
 
-  CreateTableRequest createTableRequest;
-  AttributeDefinition hashKey;
-  hashKey.SetAttributeName(HASH_KEY_NAME);
-  hashKey.SetAttributeType(ScalarAttributeType::S);
-  createTableRequest.AddAttributeDefinitions(hashKey);
-  KeySchemaElement hashKeySchemaElement;
-  hashKeySchemaElement.WithAttributeName(HASH_KEY_NAME).WithKeyType(KeyType::HASH);
-  createTableRequest.AddKeySchema(hashKeySchemaElement);
-  ProvisionedThroughput provisionedThroughput;
+  // Set table
 
-  auto table_name = conf.get<std::string>("table_name", "test") + "." + random_string(10);
+  std::string table_name = conf.get<std::string>("table_name", "test");
+  if (table_name == "test") {
+    table_name += (std::string(".") + random_string(10));
+  }
   m_table_name = Aws::String(table_name.data());
 
-  provisionedThroughput.SetReadCapacityUnits(conf.get<long long>("read_capacity", 10000));
-  provisionedThroughput.SetWriteCapacityUnits(conf.get<long long>("write_capacity", 10000));
-  createTableRequest.WithProvisionedThroughput(provisionedThroughput);
-  createTableRequest.WithTableName(m_table_name);
+  {
+    CreateTableRequest request;
+    AttributeDefinition hashKey;
+    hashKey.SetAttributeName(HASH_KEY_NAME);
+    hashKey.SetAttributeType(ScalarAttributeType::S);
+    request.AddAttributeDefinitions(hashKey);
+    KeySchemaElement hashKeySchemaElement;
+    hashKeySchemaElement.WithAttributeName(HASH_KEY_NAME).WithKeyType(KeyType::HASH);
+    request.AddKeySchema(hashKeySchemaElement);
+    ProvisionedThroughput thput;
 
-  CreateTableOutcome createTableOutcome = m_client->CreateTable(createTableRequest);
-  if (!createTableOutcome.IsSuccess()) {
-    std::cerr << "Error creating table " << m_table_name << ":" << createTableOutcome.GetError().GetMessage()
-              << std::endl;
-    exit(-1);
-  }
-  //since we need to wait for the table to finish creating anyways,
-  //let's go ahead and test describe table api while we are at it.
-  DescribeTableRequest describeTableRequest;
-  describeTableRequest.SetTableName(m_table_name);
-  DescribeTableOutcome outcome = m_client->DescribeTable(describeTableRequest);
+    thput.SetReadCapacityUnits(conf.get<long long>("read_capacity", 10000));
+    thput.SetWriteCapacityUnits(conf.get<long long>("write_capacity", 10000));
+    request.WithProvisionedThroughput(thput);
+    request.WithTableName(m_table_name);
 
-  while (true) {
+    CreateTableOutcome outcome = m_client->CreateTable(request);
     if (!outcome.IsSuccess()) {
-      std::cerr << "Error waiting for table " << m_table_name << ":" << outcome.GetError().GetMessage() << std::endl;
+      std::cerr << "Error creating table " << m_table_name << ":" << outcome.GetError().GetMessage() << std::endl;
+      exit(1);
     }
-    if (outcome.GetResult().GetTable().GetTableStatus() == TableStatus::ACTIVE) {
-      break;
-    } else {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
+  }
 
-    outcome = m_client->DescribeTable(describeTableRequest);
+  {
+    DescribeTableRequest request;
+    request.SetTableName(m_table_name);
+    DescribeTableOutcome outcome = m_client->DescribeTable(request);
+
+    while (true) {
+      if (!outcome.IsSuccess()) {
+        std::cerr << "Error waiting for table " << m_table_name << ":" << outcome.GetError().GetMessage() << std::endl;
+        exit(1);
+      }
+      if (outcome.GetResult().GetTable().GetTableStatus() == TableStatus::ACTIVE) {
+        break;
+      } else {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+
+      outcome = m_client->DescribeTable(request);
+    }
   }
 }
 
 void dynamodb::write(const std::string &key, const std::string &value) {
-  PutItemRequest putItemRequest;
-  putItemRequest.SetTableName(m_table_name);
-  AttributeValue hashKeyAttribute;
-  hashKeyAttribute.SetS(key.c_str());
-  putItemRequest.AddItem(HASH_KEY_NAME, hashKeyAttribute);
-  AttributeValue testValueAttribute;
-  testValueAttribute.SetS(value.c_str());
-  putItemRequest.AddItem(VALUE_NAME, testValueAttribute);
+  PutItemRequest request;
+  request.SetTableName(m_table_name);
+  AttributeValue key_attr;
+  key_attr.SetS(key.c_str());
+  request.AddItem(HASH_KEY_NAME, key_attr);
+  AttributeValue value_attr;
+  value_attr.SetS(value.c_str());
+  request.AddItem(VALUE_NAME, value_attr);
 
-  auto outcome = m_client->PutItem(putItemRequest);
+  auto outcome = m_client->PutItem(request);
   if (!outcome.IsSuccess()) {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
 }
 
 std::string dynamodb::read(const std::string &key) {
-  GetItemRequest getItemRequest;
+  GetItemRequest request;
   AttributeValue hashKey;
   hashKey.SetS(key.c_str());
-  getItemRequest.AddKey(HASH_KEY_NAME, hashKey);
-  getItemRequest.SetTableName(m_table_name);
+  request.AddKey(HASH_KEY_NAME, hashKey);
+  request.SetTableName(m_table_name);
 
   Aws::Vector<Aws::String> attributesToGet;
   attributesToGet.push_back(HASH_KEY_NAME);
   attributesToGet.push_back(VALUE_NAME);
-  auto outcome = m_client->GetItem(getItemRequest);
+  auto outcome = m_client->GetItem(request);
   if (!outcome.IsSuccess()) {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
@@ -104,19 +112,18 @@ std::string dynamodb::read(const std::string &key) {
 }
 
 void dynamodb::destroy() {
-  DeleteTableRequest deleteTableRequest;
-  deleteTableRequest.SetTableName(m_table_name);
+  DeleteTableRequest request;
+  request.SetTableName(m_table_name);
 
-  auto deleteTableOutcome = m_client->DeleteTable(deleteTableRequest);
+  auto outcome = m_client->DeleteTable(request);
 
-  if (!deleteTableOutcome.IsSuccess()) {
+  if (!outcome.IsSuccess()) {
     // It's okay if the table has already been deleted
-    if (deleteTableOutcome.GetError().GetErrorType() == DynamoDBErrors::RESOURCE_NOT_FOUND) {
+    if (outcome.GetError().GetErrorType() == DynamoDBErrors::RESOURCE_NOT_FOUND) {
       std::cerr << "Could not delete table " << m_table_name << ": table not found" << std::endl;
     } else {
-      std::cerr << "Error deleting table " << m_table_name << ": " << deleteTableOutcome.GetError().GetMessage()
-                << std::endl;
-      exit(-1);
+      std::cerr << "Error deleting table " << m_table_name << ": " << outcome.GetError().GetMessage() << std::endl;
+      exit(1);
     }
     return;
   }

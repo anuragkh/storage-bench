@@ -11,8 +11,9 @@
 #define ERROR_MAX 1000
 #endif
 
-#define BENCHMARK_READ  1
-#define BENCHMARK_WRITE 2
+#define BENCHMARK_READ    1
+#define BENCHMARK_WRITE   2
+#define BENCHMARK_DESTROY 4
 
 class benchmark {
  public:
@@ -133,8 +134,10 @@ class benchmark {
       tr.close();
     }
 
-    s_if->destroy();
-    std::cerr << "Destroyed storage interface." << std::endl;
+    if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY) {
+      s_if->destroy();
+      std::cerr << "Destroyed storage interface." << std::endl;
+    }
   }
 
   static uint64_t now_us() {
