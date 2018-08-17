@@ -8,9 +8,6 @@
 #include <aws/s3/model/DeleteObjectRequest.h>
 #include <aws/s3/model/ListObjectsRequest.h>
 #include <aws/core/utils/stream/SimpleStreamBuf.h>
-#include <aws/core/utils/logging/DefaultLogSystem.h>
-#include <aws/core/utils/logging/AWSLogging.h>
-#include <fstream>
 
 using namespace Aws::Auth;
 using namespace Aws::Http;
@@ -40,10 +37,11 @@ void s3::init(const storage_interface::property_map &conf) {
   auto outcome = m_client->CreateBucket(request);
   if (!outcome.IsSuccess()) {
     if (outcome.GetError().GetExceptionName() != "ResourceInUseException") {
-    std::cerr << "Failed to create bucket " << bucket_name << ": " << outcome.GetError().GetExceptionName() << std::endl;
-    exit(-1);
+      std::cerr << "Failed to create bucket " << bucket_name << ": " << outcome.GetError().GetExceptionName()
+                << std::endl;
+      exit(1);
     } else {
-      std::cerr << "Bucket " << m_bucket_name << " already exists";
+      std::cerr << "Bucket " << bucket_name << " already exists";
     }
   }
   wait_for_bucket_to_propagate();
@@ -139,8 +137,7 @@ void s3::wait_for_bucket_to_empty() {
 
 bool s3::wait_for_bucket_to_propagate() {
   unsigned timeoutCount = 0;
-  while (timeoutCount++ < TIMEOUT_MAX)
-  {
+  while (timeoutCount++ < TIMEOUT_MAX) {
     HeadBucketRequest request;
     request.SetBucket(m_bucket_name);
     HeadBucketOutcome outcome = m_client->HeadBucket(request);
