@@ -38,7 +38,7 @@ void s3::init(const storage_interface::property_map &conf) {
   if (!outcome.IsSuccess()) {
     auto exception_name = outcome.GetError().GetExceptionName();
     if (exception_name != "BucketAlreadyExists") {
-      std::cerr << "Failed to create bucket " << bucket_name << ": " << exception_name << std::endl;
+      std::cerr << "Failed to create bucket " << bucket_name << ": [" << exception_name << "]" << std::endl;
       exit(1);
     } else {
       std::cerr << "Bucket " << bucket_name << " already exists";
