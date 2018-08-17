@@ -43,16 +43,16 @@ void dynamodb::init(const property_map &conf) {
     KeySchemaElement hashKeySchemaElement;
     hashKeySchemaElement.WithAttributeName(HASH_KEY_NAME).WithKeyType(KeyType::HASH);
     request.AddKeySchema(hashKeySchemaElement);
-    ProvisionedThroughput thput;
 
-    thput.SetReadCapacityUnits(conf.get<long long>("read_capacity", 10000));
-    thput.SetWriteCapacityUnits(conf.get<long long>("write_capacity", 10000));
-    request.WithProvisionedThroughput(thput);
+    ProvisionedThroughput t;
+    t.SetReadCapacityUnits(conf.get<long long>("read_capacity", 10000));
+    t.SetWriteCapacityUnits(conf.get<long long>("write_capacity", 10000));
+    request.WithProvisionedThroughput(t);
     request.WithTableName(m_table_name);
 
     CreateTableOutcome outcome = m_client->CreateTable(request);
     if (!outcome.IsSuccess()) {
-      std::cerr << "Error creating table " << m_table_name << ":" << outcome.GetError().GetMessage() << std::endl;
+      std::cerr << "Error creating table " << m_table_name << ": " << outcome.GetError().GetExceptionName() << std::endl;
       exit(1);
     }
   }
