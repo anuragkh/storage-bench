@@ -64,9 +64,10 @@ class Logger(object):
 def _init_bin(bin_path):
     if not os.path.exists('/tmp/bin'):
         os.makedirs('/tmp/bin')
-    bin_path = os.environ.get('LAMBDA_TASK_ROOT', bin_path)
-    cur_file = os.path.join(bin_path, 'storage_bench')
-    new_file = os.path.join('/tmp/bin', 'storage_bench')
+    in_path = os.environ.get('LAMBDA_TASK_ROOT', bin_path)
+    out_path = os.environ.get('TMP_PATH', '/tmp/bin')
+    cur_file = os.path.join(in_path, 'storage_bench')
+    new_file = os.path.join(out_path, 'storage_bench')
     if not os.path.isfile(new_file):
         shutil.copy2(cur_file, new_file)
         os.chmod(new_file, 0o775)
