@@ -80,9 +80,9 @@ def _copy_results(logger, result):
             bucket.put_object(Key=result, Body=data)
 
 
-def _run_benchmark(logger, system, conf, out, bench, num_ops, warm_up, mode, bin_path):
+def _run_benchmark(logger, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
     executable = _init_bin(bin_path)
-    cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up)]
+    cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
 
@@ -114,6 +114,7 @@ def benchmark_handler(event, context):
     object_size = event.get('object_size')
     num_ops = event.get('num_ops')
     warm_up = event.get('warm_up')
+    dist = event.get('dist')
     result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
 
     try:
@@ -130,7 +131,7 @@ def benchmark_handler(event, context):
     conf_file = prefix + '.conf'
     try:
         _create_ini(logger, system, conf, conf_file)
-        _run_benchmark(logger, system, conf_file, prefix, object_size, num_ops, warm_up, mode, bin_path)
+        _run_benchmark(logger, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist, bin_path)
     except Exception as e:
         logger.error(e)
     finally:

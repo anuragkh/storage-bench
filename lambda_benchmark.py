@@ -82,6 +82,7 @@ def invoke(args, mode, warm_up):
         bin_path=args.bin_path,
         object_size=args.object_size,
         num_ops=args.num_ops,
+        dist=args.distribution,
         warm_up=warm_up,
         mode=mode,
         id=str(uuid.uuid4())
@@ -187,6 +188,7 @@ def main():
     parser.add_argument('--num-ops', type=int, default=-1, help='number of operations')
     parser.add_argument('--bin-path', type=str, default='build', help='location of executable (local mode only)')
     parser.add_argument('--object-size', type=int, default=8, help='object size to benchmark for')
+    parser.add_argument('--distribution', type=str, default='sequential', help='key distribution')
     parser.add_argument('--bench-mode', type=str, default='read_write',
                         help='benchmark mode (read/write/read_write/scale:{op}:{n}:{period}:{num_periods})')
     args = parser.parse_args()

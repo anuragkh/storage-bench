@@ -3,27 +3,12 @@
 #include <boost/property_tree/ini_parser.hpp>
 #include "storage_interface.h"
 #include "benchmark.h"
-
-#ifndef NUM_OPS
-#define NUM_OPS 2000ULL
-#endif
-
-#ifndef MAX_DATASET_SIZE
-#define MAX_DATASET_SIZE 2147483648
-#endif
-
-size_t num_ops(const std::string &system, size_t value_size) {
-  if (system == "dynamodb") {
-    return std::min(2 * NUM_OPS, static_cast<unsigned long long>(MAX_DATASET_SIZE / value_size));
-  } else if (system == "redis" || system == "mmux") {
-    return std::min(50 * NUM_OPS, static_cast<unsigned long long>(MAX_DATASET_SIZE / value_size));
-  }
-  return std::min(NUM_OPS, static_cast<unsigned long long>(MAX_DATASET_SIZE / value_size));
-}
+#include "key_generator.h"
 
 int main(int argc, char **argv) {
-  if (argc != 8) {
-    std::cerr << "Usage: " << argv[0] << " system conf_file output_prefix value_size mode num_ops warm_up" << std::endl;
+  if (argc != 9) {
+    std::cerr << "Usage: " << argv[0] << " system conf_file output_prefix value_size mode num_ops warm_up dist"
+              << std::endl;
     return -1;
   }
   std::string system = argv[1];
@@ -51,7 +36,15 @@ int main(int argc, char **argv) {
   auto s_if = storage_interfaces::get_interface(system);
   auto s_conf = conf.get_child(system);
   std::string output_prefix = result_prefix + "_" + std::to_string(value_size);
-  benchmark::run(s_if, s_conf, output_prefix, value_size, n_ops, warm_up, mode);
+  if (!strcmp(argv[8], "zipf")) {
+    auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
+    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode);
+  } else if (!strcmp(argv[8], "sequential")) {
+    auto key_gen = std::make_shared<sequential_key_generator>();
+    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode);
+  } else {
+    std::cerr << "Unknown key distribution: " << argv[8] << std::endl;
+  }
 
   return 0;
 }

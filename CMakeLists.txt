@@ -31,14 +31,13 @@ add_executable(storage_bench
         src/main.cpp
         src/storage_interface.cpp
         src/storage_interface.h
-        src/benchmark.cpp
         src/benchmark.h
         src/dynamodb.cpp
         src/dynamodb.h
         src/s3.cpp
         src/s3.h
         src/redis.cpp
-        src/redis.h src/memorymux.cpp src/memorymux.h)
+        src/redis.h src/memorymux.cpp src/memorymux.h src/key_generator.h src/key_generator.cpp)
 
 if (NOT USE_SYSTEM_BOOST)
   add_dependencies(storage_bench boost)
