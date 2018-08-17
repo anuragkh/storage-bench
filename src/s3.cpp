@@ -35,16 +35,19 @@ void s3::init(const storage_interface::property_map &conf) {
   request.SetACL(BucketCannedACL::private_);
 
   auto outcome = m_client->CreateBucket(request);
+  bool already_exists = false;
   if (!outcome.IsSuccess()) {
     auto exception_name = outcome.GetError().GetExceptionName();
     if (exception_name != "BucketAlreadyExists") {
       std::cerr << "Failed to create bucket " << bucket_name << ": [" << exception_name << "]" << std::endl;
       exit(1);
     } else {
+      already_exists = true;
       std::cerr << "Bucket " << bucket_name << " already exists";
     }
   }
-  wait_for_bucket_to_propagate();
+  if (!already_exists)
+    wait_for_bucket_to_propagate();
 }
 
 void s3::write(const std::string &key, const std::string &value) {
