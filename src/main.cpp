@@ -12,19 +12,7 @@
 #define MAX_DATASET_SIZE 2147483648
 #endif
 
-#ifndef VALUE_SIZE_MIN
-#define VALUE_SIZE_MIN 8
-#endif
-
-#ifndef VALUE_SIZE_MAX
-#define VALUE_SIZE_MAX 134217728
-#endif
-
-#ifndef VALUE_SIZE_STEP
-#define VALUE_SIZE_STEP 4
-#endif
-
-size_t num_ops(const std::string& system, size_t value_size) {
+size_t num_ops(const std::string &system, size_t value_size) {
   if (system == "dynamodb") {
     return std::min(2 * NUM_OPS, static_cast<unsigned long long>(MAX_DATASET_SIZE / value_size));
   } else if (system == "redis" || system == "mmux") {
@@ -34,14 +22,22 @@ size_t num_ops(const std::string& system, size_t value_size) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 5) {
-    std::cerr << "Usage: " << argv[0] << " [system] [conf_file] [output_file_prefix] [value_size]" << std::endl;
+  if (argc != 8) {
+    std::cerr << "Usage: " << argv[0] << " system conf_file output_prefix value_size mode num_ops warm_up" << std::endl;
     return -1;
   }
   std::string system = argv[1];
   std::string conf_file = argv[2];
-  std::string output_file_prefix = argv[3];
+  std::string result_prefix = argv[3];
   size_t value_size = std::stoull(argv[4]);
+  int32_t mode = BENCHMARK_READ | BENCHMARK_WRITE;
+  if (!strcmp(argv[5], "read")) {
+    mode = BENCHMARK_READ;
+  } else if (!strcmp(argv[5], "write")) {
+    mode = BENCHMARK_WRITE;
+  }
+  size_t n_ops = std::stoull(argv[6]);
+  bool warm_up = static_cast<bool>(std::stod(argv[7]));
 
   namespace pt = boost::property_tree;
   pt::ptree conf;
@@ -52,9 +48,10 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  auto iface = storage_interfaces::get_interface(system);
-  std::string benchmark_output_prefix = output_file_prefix + "_" + std::to_string(value_size);
-  benchmark::run(iface, benchmark_output_prefix, value_size, num_ops(system, value_size), conf.get_child(system));
+  auto s_if = storage_interfaces::get_interface(system);
+  auto s_conf = conf.get_child(system);
+  std::string output_prefix = result_prefix + "_" + std::to_string(value_size);
+  benchmark::run(s_if, s_conf, output_prefix, value_size, n_ops, warm_up, mode);
 
   return 0;
 }

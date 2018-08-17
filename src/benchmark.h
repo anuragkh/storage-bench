@@ -8,13 +8,18 @@
 #define ERROR_MAX 1000
 #endif
 
+#define BENCHMARK_READ  1
+#define BENCHMARK_WRITE 2
+
 class benchmark {
  public:
-  static void run(const std::shared_ptr<storage_interface> &iface,
+  static void run(const std::shared_ptr<storage_interface> &s_if,
+                  const storage_interface::property_map &conf,
                   const std::string &output_path,
                   size_t value_size,
                   size_t num_ops,
-                  const storage_interface::property_map &conf);
+                  bool warmup,
+                  int32_t mode);
 
   static uint64_t now_us();
 };

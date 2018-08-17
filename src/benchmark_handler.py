@@ -10,115 +10,19 @@ import boto3
 from six.moves import configparser
 
 if sys.version_info[0] < 3:
-    try:
-        from cStringIO import StringIO as BytesIO
-    except ImportError:
-        from StringIO import StringIO as BytesIO
-
-
-    def safe_unicode(obj, *args):
-        """ return the unicode representation of obj """
-        try:
-            return unicode(obj, *args)
-        except UnicodeDecodeError:
-            # obj is byte string
-            ascii_text = str(obj).encode('string_escape')
-            return unicode(ascii_text)
-
-
-    def iteritems(x):
-        return x.iteritems()
-
-
-    def iterkeys(x):
-        return x.iterkeys()
-
-
-    def itervalues(x):
-        return x.itervalues()
-
-
-    def nativestr(x):
-        return x if isinstance(x, str) else x.encode('utf-8', 'replace')
-
-
-    def u(x):
-        return x.decode()
-
-
     def b(x):
-        return x
-
-
-    def next(x):
-        return x.next()
-
-
-    def byte_to_chr(x):
-        return x
-
-
-    def char_to_byte(x):
         return x
 
 
     def bytes_to_str(x):
         return x
-
-
-    unichr = unichr
-    xrange = xrange
-    basestring = basestring
-    unicode = unicode
-    bytes = str
-    long = long
 else:
-    def iteritems(x):
-        return iter(x.items())
-
-
-    def iterkeys(x):
-        return iter(x.keys())
-
-
-    def itervalues(x):
-        return iter(x.values())
-
-
-    def byte_to_chr(x):
-        return chr(x)
-
-
-    def char_to_byte(x):
-        return ord(x)
-
-
-    def nativestr(x):
-        return x if isinstance(x, str) else x.decode('utf-8', 'replace')
+    def b(x):
+        return x.encode('utf-8') if not isinstance(x, bytes) else x
 
 
     def bytes_to_str(x):
-        return x.decode()
-
-
-    def u(x):
-        return x
-
-
-    def b(x):
-        return x.encode('latin-1') if not isinstance(x, bytes) else x
-
-
-    next = next
-    unichr = chr
-    imap = map
-    izip = zip
-    xrange = range
-    basestring = str
-    unicode = str
-    safe_unicode = str
-    bytes = bytes
-    long = int
+        return x.decode('utf-8') if isinstance(x, bytes) else x
 
 
 class NetworkFile(object):
@@ -169,18 +73,16 @@ def _init_bin(bin_path):
 
 
 def _copy_results(logger, result):
-    logger.info('Copying results @ {} to S3...'.format(result))
     bucket = boto3.resource('s3').Bucket('bench-results')
     if os.path.isfile(result):
+        logger.info('Copying results @ {} to S3...'.format(result))
         with open(result, 'rb') as data:
             bucket.put_object(Key=result, Body=data)
-    else:
-        logger.warn('Result {} not found'.format(result))
 
 
-def _run_benchmark(logger, system, conf, out, bench, bin_path):
+def _run_benchmark(logger, system, conf, out, bench, num_ops, warm_up, mode, bin_path):
     executable = _init_bin(bin_path)
-    cmdline = [executable, system, conf, out, bench]
+    cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up)]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
 
@@ -206,9 +108,12 @@ def benchmark_handler(event, context):
     conf = event.get('conf')
     host = event.get('host')
     port = int(event.get('port'))
-    bin_path = event.get('bin_path', '.')
-    object_sizes = [8, 32, 128, 512, 2048, 8192, 32768, 131072, 524288, 2097152, 8388608, 33554432, 134217728]
-    object_sizes = event.get('object_sizes', object_sizes)
+    mode = event.get('mode')
+    lambda_id = event.get('id')
+    bin_path = event.get('bin_path')
+    object_size = event.get('object_size')
+    num_ops = event.get('num_ops')
+    warm_up = event.get('warm_up')
     result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
 
     try:
@@ -219,17 +124,17 @@ def benchmark_handler(event, context):
 
     logger.info('Event: {}, Context: {}'.format(event, context))
 
+    prefix = os.path.join('/tmp', system)
+    if lambda_id is not None:
+        prefix = prefix + '_' + lambda_id
+    conf_file = prefix + '.conf'
     try:
-        prefix = os.path.join('/tmp', system)
-        _create_ini(logger, system, conf, prefix + '.conf')
-        for object_size in object_sizes:
-            _run_benchmark(logger, system, prefix + '.conf', prefix, str(object_size), bin_path)
+        _create_ini(logger, system, conf, conf_file)
+        _run_benchmark(logger, system, conf_file, prefix, object_size, num_ops, warm_up, mode, bin_path)
     except Exception as e:
         logger.error(e)
     finally:
-        prefix = os.path.join('/tmp', system)
-        for object_size in object_sizes:
-            for result_suffix in result_suffixes:
-                _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
+        for result_suffix in result_suffixes:
+            _copy_results(logger, prefix + '_' + str(object_size) + result_suffix)
 
     logger.close()

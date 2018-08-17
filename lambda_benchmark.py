@@ -6,9 +6,11 @@ import errno
 import json
 import multiprocessing
 import os
+import select
 import socket
 import sys
 import time
+import uuid
 from multiprocessing import Process
 
 import boto3
@@ -16,9 +18,22 @@ from botocore.exceptions import ClientError
 from six.moves import configparser
 
 from src import benchmark_handler
+from src.benchmark_handler import bytes_to_str
 
 iam_client = boto3.client('iam')
 lambda_client = boto3.client('lambda')
+function_name = 'StorageBenchmark'
+
+NUM_OPS = 2000
+MAX_DATA_SET_SIZE = 2147483648
+
+
+def num_ops(system, value_size):
+    if system == "dynamodb":
+        return min(2 * NUM_OPS, int(MAX_DATA_SET_SIZE / value_size))
+    elif system == "redis" or system == "mmux":
+        return min(50 * NUM_OPS, int(MAX_DATA_SET_SIZE / value_size))
+    return min(NUM_OPS, int(MAX_DATA_SET_SIZE / value_size))
 
 
 def create_function(name):
@@ -48,22 +63,47 @@ def parse_ini(system, conf_file):
     return dict(config.items(system))
 
 
-def invoke(name, system, conf_file, host, port, bin_path, object_sizes):
-    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path,
-                 object_sizes=object_sizes)
-    lambda_client.invoke(
-        FunctionName=name,
-        InvocationType='Event',
-        Payload=json.dumps(event),
+def invoke_lambda(e):
+    lambda_client.invoke(FunctionName=function_name, InvocationType='Event', Payload=json.dumps(e))
+
+
+def invoke_locally(e):
+    f = Process(target=benchmark_handler.benchmark_handler, args=(e, None,))
+    f.start()
+    return f
+
+
+def invoke(args, mode, warm_up):
+    e = dict(
+        system=args.system,
+        conf=parse_ini(args.system, args.conf),
+        host=args.host,
+        port=args.port,
+        bin_path=args.bin_path,
+        object_size=args.object_size,
+        num_ops=args.num_ops,
+        warm_up=warm_up,
+        mode=mode,
+        id=str(uuid.uuid4())
     )
+    if args.invoke:
+        print('Invoking function...')
+        return invoke_lambda(e)
+    elif args.invoke_local:
+        print('Invoking function locally...')
+        return invoke_locally(e)
 
 
-def invoke_locally(system, conf_file, host, port, bin_path, object_sizes):
-    event = dict(system=system, conf=parse_ini(system, conf_file), host=host, port=port, bin_path=bin_path,
-                 object_sizes=object_sizes)
-    function_process = Process(target=benchmark_handler.benchmark_handler, args=(event, None,))
-    function_process.start()
-    return function_process
+def invoke_n(args, bench_mode, n):
+    return [invoke(args, bench_mode, 0) for _ in range(n)]
+
+
+def invoke_n_periodically(args, bench_mode, n, period, num_periods):
+    p = []
+    for i in range(num_periods):
+        p.extend(invoke_n(args, bench_mode, n))
+        time.sleep(period)
+    return p
 
 
 def is_socket_valid(socket_instance):
@@ -91,33 +131,51 @@ def is_socket_valid(socket_instance):
 def run_server(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.setblocking(False)
     s.settimeout(300)
     try:
         s.bind((host, port))
     except socket.error as ex:
         print('Bind failed: {}'.format(ex))
         sys.exit()
-    s.listen(0)
-    print('Listening for function logs on {}:{}'.format(host, port))
-    sock, address = s.accept()
-    sock.settimeout(300)
-    print('Received connection from {}'.format(address))
-    while is_socket_valid(sock):
-        try:
-            data = sock.recv(4096).rstrip().lstrip()
-            if data == 'CLOSE':
-                print('Function @ {} finished execution'.format(address))
-                break
-            elif data:
-                print('FUNCTION_LOG {} {}'.format(datetime.datetime.now(), data))
-        except socket.error as ex:
-            print("Function @ {} is offline: {}".format(address, ex))
-            sock.close()
-            break
-    s.close()
+    s.listen(5)
+    return s
 
 
-if __name__ == '__main__':
+def listen_connection(s, num_connections):
+    inputs = [s]
+    outputs = []
+    n_closed = 0
+    while inputs:
+        readable, writable, exceptional = select.select(inputs, outputs, inputs)
+        for r in readable:
+            if r is s:
+                sock, address = r.accept()
+                sock.setblocking(False)
+                inputs.append(sock)
+            else:
+                data = r.recv(4096)
+                msg = bytes_to_str(data.rstrip().lstrip())
+                if 'CLOSE' in msg or not data:
+                    print('Function @ {} {} Finished execution'.format(r.getpeername(), datetime.datetime.now()))
+                    inputs.remove(r)
+                    r.close()
+                    n_closed += 1
+                    if n_closed == num_connections:
+                        inputs.remove(s)
+                        s.close()
+                else:
+                    print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), msg))
+
+
+def log_process(host, port, num_loggers):
+    s = run_server(host, port)
+    p = Process(target=listen_connection, args=(s, num_loggers,))
+    p.start()
+    return p
+
+
+def main():
     parser = argparse.ArgumentParser(description='Run storage benchmark on AWS Lambda.')
     parser.add_argument('--create', action='store_true', help='create AWS Lambda function')
     parser.add_argument('--invoke', action='store_true', help='invoke AWS Lambda function')
@@ -126,10 +184,12 @@ if __name__ == '__main__':
     parser.add_argument('--conf', type=str, default='conf/storage_bench.conf', help='configuration file')
     parser.add_argument('--host', type=str, default=socket.gethostname(), help='name of host where script is run')
     parser.add_argument('--port', type=int, default=8888, help='port that server listens on')
+    parser.add_argument('--num-ops', type=int, default=-1, help='number of operations')
     parser.add_argument('--bin-path', type=str, default='build', help='location of executable (local mode only)')
-    parser.add_argument('--object-sizes', nargs='+', help='object sizes to benchmark for')
+    parser.add_argument('--object-size', type=int, default=8, help='object size to benchmark for')
+    parser.add_argument('--bench-mode', type=str, default='read_write',
+                        help='benchmark mode (read/write/read_write/scale:{op}:{n}:{period}:{num_periods})')
     args = parser.parse_args()
-    function_name = "StorageBenchmark"
 
     if args.create:
         try:
@@ -140,23 +200,25 @@ if __name__ == '__main__':
             else:
                 print('Unexpected error: {}'.format(e))
                 raise
-
         print('Creation successful!')
 
     if args.invoke or args.invoke_local:
-        log_server_process = Process(target=run_server, args=(args.host, args.port))
-        log_server_process.start()
-        time.sleep(3)
-        p = None
-        if args.invoke:
-            print('Invoking function...')
-            invoke(function_name, args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
-        elif args.invoke_local:
-            print('Invoking function locally...')
-            p = invoke_locally(args.system, args.conf, args.host, args.port, args.bin_path, args.object_sizes)
+        if args.num_ops == -1:
+            args.num_ops = num_ops(args.system, args.object_size)
+        if args.bench_mode.startswith('scale'):
+            _, mode, n, period, num_periods = args.bench_mode.split(':')
+            lp = log_process(args.host, args.port, int(n) * int(num_periods))
+            processes = invoke_n_periodically(args, mode, int(n), int(period), int(num_periods))
+            processes.append(lp)
+        else:
+            lp = log_process(args.host, args.port, 1)
+            processes = [invoke(args, args.bench_mode, 1), lp]
 
-        if p is not None:
-            p.join()
-            print('Local function process terminated')
+        for p in processes:
+            if p is not None:
+                p.join()
+                print('{} terminated'.format(p))
 
-        log_server_process.join()
+
+if __name__ == '__main__':
+    main()
