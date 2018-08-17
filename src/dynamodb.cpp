@@ -52,8 +52,12 @@ void dynamodb::init(const property_map &conf) {
 
     CreateTableOutcome outcome = m_client->CreateTable(request);
     if (!outcome.IsSuccess()) {
-      std::cerr << "Error creating table " << m_table_name << ": " << outcome.GetError().GetExceptionName() << std::endl;
-      exit(1);
+      if (outcome.GetError().GetExceptionName() != "ResourceInUseException") {
+        std::cerr << "Error creating table " << m_table_name << ": " << outcome.GetError().GetExceptionName() << std::endl;
+        exit(1);
+      } else {
+        std::cerr << "Table " << m_table_name << " already exists";
+      }
     }
   }
 
