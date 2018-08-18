@@ -46,15 +46,18 @@ def create_function(name):
     with open(lambda_zip, 'rb') as f:
         zipped_code = f.read()
     role = iam_client.get_role(RoleName='aws-lambda-execute')
-    lambda_client.create_function(
+    resp = lambda_client.create_function(
         FunctionName=name,
+        Description='Storage Benchmark',
         Runtime='python3.6',
         Role=role['Role']['Arn'],
         Handler='benchmark_handler.benchmark_handler',
         Code=dict(ZipFile=zipped_code),
         Timeout=300,
+        MemorySize=3008,
         Environment=dict(Variables=env),
     )
+    print('Created function: {}'.format(resp))
 
 
 def parse_ini(system, conf_file):
