@@ -5,6 +5,8 @@
 #include "benchmark.h"
 #include "key_generator.h"
 
+#define LAMBDA_TIMEOUT_SAFE 240
+
 int main(int argc, char **argv) {
   if (argc != 9) {
     std::cerr << "Usage: " << argv[0] << " system conf_file output_prefix value_size mode num_ops warm_up dist"
@@ -41,12 +43,17 @@ int main(int argc, char **argv) {
   auto s_if = storage_interfaces::get_interface(system);
   auto s_conf = conf.get_child(system);
   std::string output_prefix = result_prefix + "_" + std::to_string(value_size);
+  uint64_t timeout = LAMBDA_TIMEOUT_SAFE;
   if (!strcmp(argv[8], "zipf")) {
+    auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
-    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode);
+    auto remaining = timeout - (benchmark::now_us() - begin);
+    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
   } else if (!strcmp(argv[8], "sequential")) {
+    auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<sequential_key_generator>();
-    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode);
+    auto remaining = timeout - (benchmark::now_us() - begin);
+    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
   } else {
     std::cerr << "Unknown key distribution: " << argv[8] << std::endl;
   }

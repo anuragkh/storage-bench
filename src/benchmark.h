@@ -25,10 +25,13 @@ class benchmark {
                   size_t value_size,
                   size_t num_ops,
                   bool warm_up,
-                  int32_t mode) {
+                  int32_t mode,
+                  uint64_t max_us) {
     int err_count = 0;
     size_t warm_up_ops = num_ops / 10;
     std::string value(value_size, 'x');
+
+    auto start_ts = now_us();
 
     std::cerr << "Initializing storage interface..." << std::endl;
     s_if->init(conf);
@@ -39,7 +42,7 @@ class benchmark {
 
       if (warm_up) {
         std::cerr << "Warm-up writes..." << std::endl;
-        for (size_t i = 0; i < warm_up_ops; i++) {
+        for (size_t i = 0; i < warm_up_ops && now_us() - start_ts < max_us; i++) {
           try {
             s_if->write(key_gen->next(), value);
           } catch (std::runtime_error &e) {
@@ -57,7 +60,7 @@ class benchmark {
 
       std::cerr << "Starting writes..." << std::endl;
       auto w_begin = now_us();
-      for (size_t i = 0; i < num_ops; ++i) {
+      for (size_t i = 0; i < num_ops && now_us() - start_ts < max_us; ++i) {
         auto t_b = now_us();
         try {
           s_if->write(key_gen->next(), value);
@@ -90,7 +93,7 @@ class benchmark {
       if (warm_up) {
         std::cerr << "Warm-up reads..." << std::endl;
         err_count = 0;
-        for (size_t i = 0; i < warm_up_ops; i++) {
+        for (size_t i = 0; i < warm_up_ops && now_us() - start_ts < max_us; i++) {
           try {
             s_if->read(key_gen->next());
           } catch (std::runtime_error &e) {
@@ -108,7 +111,7 @@ class benchmark {
 
       std::cerr << "Starting reads..." << std::endl;
       auto r_begin = now_us();
-      for (size_t i = 0; i < num_ops; ++i) {
+      for (size_t i = 0; i < num_ops && now_us() - start_ts < max_us; ++i) {
         auto t_b = now_us();
         try {
           s_if->read(key_gen->next());
