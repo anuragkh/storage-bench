@@ -66,6 +66,8 @@ def _init_bin(bin_path, lambda_id):
         os.makedirs('/tmp/bin')
     in_path = os.environ.get('LAMBDA_TASK_ROOT', bin_path)
     out_path = os.environ.get('TMP_PATH', os.path.join('/tmp', lambda_id, 'bin'))
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
     cur_file = os.path.join(in_path, 'storage_bench')
     new_file = os.path.join(out_path, 'storage_bench')
     if not os.path.isfile(new_file):
