@@ -86,7 +86,10 @@ def _run_benchmark(logger, system, conf, out, bench, num_ops, warm_up, mode, dis
     executable = _init_bin(bin_path)
     cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
-    subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
+    try:
+        subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
+    except subprocess.CalledProcessError as e:
+        logger.warn('Process did not terminate cleanly (Exit code: {})'.format(e.returncode))
 
 
 def _create_ini(logger, system, conf, out):
