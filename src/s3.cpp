@@ -15,10 +15,16 @@ using namespace Aws::Client;
 using namespace Aws::S3;
 using namespace Aws::S3::Model;
 
-void s3::init(const storage_interface::property_map &conf) {
+s3::s3() {
   m_options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
   Aws::InitAPI(m_options);
+}
 
+s3::~s3() {
+  Aws::ShutdownAPI(m_options);
+}
+
+void s3::init(const storage_interface::property_map &conf) {
   // Create a client
   ClientConfiguration config;
   m_client = Aws::MakeShared<S3Client>("S3Benchmark", config);
@@ -94,8 +100,6 @@ void s3::destroy() {
       exit(1);
     }
   }
-
-  Aws::ShutdownAPI(m_options);
 }
 
 void s3::empty_bucket() {

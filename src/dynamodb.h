@@ -11,6 +11,9 @@ class dynamodb: public storage_interface {
   static constexpr const char *HASH_KEY_NAME = "HashKey";
   static constexpr const char *VALUE_NAME = "Value";
 
+  dynamodb();
+  ~dynamodb();
+
   void init(const property_map &conf) override;
   void write(const std::string &key, const std::string &value) override;
   std::string read(const std::string &key) override;

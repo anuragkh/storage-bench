@@ -18,10 +18,16 @@ using namespace Aws::Client;
 using namespace Aws::DynamoDB;
 using namespace Aws::DynamoDB::Model;
 
-void dynamodb::init(const property_map &conf) {
+dynamodb::dynamodb() {
   m_options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
   Aws::InitAPI(m_options);
+}
 
+dynamodb::~dynamodb() {
+  Aws::ShutdownAPI(m_options);
+}
+
+void dynamodb::init(const property_map &conf) {
   // Create a client
   ClientConfiguration config;
   m_client = Aws::MakeShared<DynamoDBClient>("DynamoDBBenchmark", config);
@@ -131,10 +137,6 @@ void dynamodb::destroy() {
     }
     return;
   }
-
-  // Don't wait for actual deletion.
-
-  Aws::ShutdownAPI(m_options);
 }
 
 REGISTER_STORAGE_IFACE("dynamodb", dynamodb);

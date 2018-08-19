@@ -8,6 +8,8 @@
 class s3: public storage_interface {
  public:
   static const int TIMEOUT_MAX = 20;
+  s3();
+  ~s3();
 
   void init(const property_map &conf) override;
   void write(const std::string &key, const std::string &value) override;
