@@ -60,7 +60,8 @@ class benchmark {
 
       std::cerr << "Starting writes..." << std::endl;
       auto w_begin = now_us();
-      for (size_t i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
+      size_t i;
+      for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
         auto t_b = now_us();
         try {
           s_if->write(key_gen->next(), value);
@@ -75,13 +76,13 @@ class benchmark {
           }
         }
         auto t_e = now_us();
-        lw << (t_e - t_b) << std::endl;
+        lw << t_e << "\t" << (t_e - t_b) << std::endl;
       }
       auto w_end = now_us();
       auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
       std::cerr << "Finished writes." << std::endl;
 
-      tw << (static_cast<double>(num_ops) / w_elapsed_s) << std::endl;
+      tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
       lw.close();
       tw.close();
     }
@@ -111,7 +112,8 @@ class benchmark {
 
       std::cerr << "Starting reads..." << std::endl;
       auto r_begin = now_us();
-      for (size_t i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
+      size_t i;
+      for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
         auto t_b = now_us();
         try {
           s_if->read(key_gen->next());
@@ -126,13 +128,13 @@ class benchmark {
           }
         }
         auto t_e = now_us();
-        lr << (t_e - t_b) << std::endl;
+        lr << t_e << "\t" << (t_e - t_b) << std::endl;
       }
       auto r_end = now_us();
       auto r_elapsed_s = static_cast<double>(r_end - r_begin) / 1000000.0;
       std::cerr << "Finished reads." << std::endl;
 
-      tr << (static_cast<double>(num_ops) / r_elapsed_s) << std::endl;
+      tr << (static_cast<double>(i) / r_elapsed_s) << std::endl;
       lr.close();
       tr.close();
     }
