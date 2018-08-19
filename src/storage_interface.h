@@ -57,9 +57,6 @@ class storage_interfaces {
     iface##_class() {                                                           \
       storage_interfaces::register_interface(name, std::make_shared<iface>());  \
     }                                                                           \
-    ~iface##_class() {                                                          \
-      storage_interfaces::deregister_interface(name);                           \
-    }                                                                           \
   };                                                                            \
   static iface##_class iface##_singleton
 
