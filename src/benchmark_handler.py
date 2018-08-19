@@ -61,11 +61,11 @@ class Logger(object):
         self.f.close()
 
 
-def _init_bin(bin_path):
+def _init_bin(bin_path, lambda_id):
     if not os.path.exists('/tmp/bin'):
         os.makedirs('/tmp/bin')
     in_path = os.environ.get('LAMBDA_TASK_ROOT', bin_path)
-    out_path = os.environ.get('TMP_PATH', '/tmp/bin')
+    out_path = os.environ.get('TMP_PATH', os.path.join('/tmp', lambda_id, 'bin'))
     cur_file = os.path.join(in_path, 'storage_bench')
     new_file = os.path.join(out_path, 'storage_bench')
     if not os.path.isfile(new_file):
@@ -82,8 +82,8 @@ def _copy_results(logger, prefix, result):
             bucket.put_object(Key=prefix + "_" + os.path.basename(result), Body=data)
 
 
-def _run_benchmark(logger, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
-    executable = _init_bin(bin_path)
+def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
+    executable = _init_bin(bin_path, lambda_id)
     cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     try:
@@ -114,7 +114,7 @@ def benchmark_handler(event, context):
     host = event.get('host')
     port = int(event.get('port'))
     mode = event.get('mode')
-    lambda_id = event.get('id')
+    lid = event.get('id')
     bin_path = event.get('bin_path')
     object_size = event.get('object_size')
     num_ops = event.get('num_ops')
@@ -130,15 +130,15 @@ def benchmark_handler(event, context):
 
     logger.info('Event: {}, Context: {}'.format(event, context))
 
-    prefix = os.path.join('/tmp', system + '_' + lambda_id)
+    prefix = os.path.join('/tmp', system + '_' + lid)
     conf_file = prefix + '.conf'
     try:
         _create_ini(logger, system, conf, conf_file)
-        _run_benchmark(logger, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist, bin_path)
+        _run_benchmark(logger, lid, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist, bin_path)
     except Exception as e:
         logger.error(e)
     finally:
         for result_suffix in result_suffixes:
-            _copy_results(logger, os.path.join(system, lambda_id), prefix + '_' + str(object_size) + result_suffix)
+            _copy_results(logger, os.path.join(system, lid), prefix + '_' + str(object_size) + result_suffix)
 
     logger.close()
