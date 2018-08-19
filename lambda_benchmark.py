@@ -76,7 +76,7 @@ def invoke_locally(e):
     return f
 
 
-def invoke(args, mode, warm_up):
+def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
     e = dict(
         system=args.system,
         conf=parse_ini(args.system, args.conf),
@@ -88,7 +88,7 @@ def invoke(args, mode, warm_up):
         dist=args.distribution,
         warm_up=warm_up,
         mode=mode,
-        id=str(uuid.uuid4())
+        id=lambda_id
     )
     if args.invoke:
         print('Invoking function...')
@@ -98,14 +98,14 @@ def invoke(args, mode, warm_up):
         return invoke_locally(e)
 
 
-def invoke_n(args, bench_mode, n):
-    return [invoke(args, bench_mode, 0) for _ in range(n)]
+def invoke_n(args, bench_mode, n, base=0):
+    return [invoke(args, bench_mode, 0, str(base + i)) for i in range(n)]
 
 
 def invoke_n_periodically(args, bench_mode, n, period, num_periods):
     p = []
     for i in range(num_periods):
-        p.extend(invoke_n(args, bench_mode, n))
+        p.extend(invoke_n(args, bench_mode, n, i * n))
         time.sleep(period)
     return p
 
