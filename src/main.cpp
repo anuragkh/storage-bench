@@ -44,15 +44,18 @@ int main(int argc, char **argv) {
   auto s_conf = conf.get_child(system);
   std::string output_prefix = result_prefix + "_" + std::to_string(value_size);
   uint64_t timeout = LAMBDA_TIMEOUT_SAFE;
+  std::cerr << "Timeout: " << timeout << "us" << std::endl;
   if (!strcmp(argv[8], "zipf")) {
     auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
     auto remaining = timeout - (benchmark::now_us() - begin);
+    std::cerr << "Remaining: " << remaining << "us" << std::endl;
     benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
   } else if (!strcmp(argv[8], "sequential")) {
     auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<sequential_key_generator>();
     auto remaining = timeout - (benchmark::now_us() - begin);
+    std::cerr << "Remaining: " << remaining << "us" << std::endl;
     benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
   } else {
     std::cerr << "Unknown key distribution: " << argv[8] << std::endl;
