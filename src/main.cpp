@@ -5,7 +5,7 @@
 #include "benchmark.h"
 #include "key_generator.h"
 
-#define LAMBDA_TIMEOUT_SAFE 240
+#define LAMBDA_TIMEOUT_SAFE (240 * 1000 * 1000)
 
 int main(int argc, char **argv) {
   if (argc != 9) {
