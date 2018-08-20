@@ -20,7 +20,7 @@ class benchmark {
   template<typename K>
   static void run(const std::shared_ptr<storage_interface> &s_if,
                   const storage_interface::property_map &conf,
-                  std::shared_ptr<K> key_gen,
+                  const std::shared_ptr<K> key_gen,
                   const std::string &output_path,
                   size_t value_size,
                   size_t num_ops,
