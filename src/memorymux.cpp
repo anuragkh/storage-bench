@@ -29,19 +29,19 @@ void memorymux::destroy() {
   m_mmux_client.reset();
 }
 
-void memorymux::write_async(const std::string &key, const std::string &value) {
+void memorymux::write_async(const std::string &, const std::string &) {
   throw std::runtime_error("Not supported");
 }
 
-void memorymux::read_async(const std::string &key) {
+void memorymux::read_async(const std::string &) {
   throw std::runtime_error("Not supported");
 }
 
-void memorymux::wait_writes() {
+void memorymux::wait_write() {
   throw std::runtime_error("Not supported");
 }
 
-void memorymux::wait_reads(std::vector<std::string> &results) {
+std::string memorymux::wait_read() {
   throw std::runtime_error("Not supported");
 }
 

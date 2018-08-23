@@ -1,11 +1,13 @@
 #ifndef STORAGE_BENCH_S_3_H
 #define STORAGE_BENCH_S_3_H
 
+#include <queue>
 #include <aws/core/Aws.h>
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/PutObjectRequest.h>
 #include <aws/s3/model/GetObjectRequest.h>
 #include "storage_interface.h"
+#include "queue.h"
 
 class s3 : public storage_interface {
  public:
@@ -19,8 +21,8 @@ class s3 : public storage_interface {
   void destroy() override;
   void write_async(const std::string &key, const std::string &value) override;
   void read_async(const std::string &key) override;
-  void wait_writes() override;
-  void wait_reads(std::vector<std::string> &results) override;
+  void wait_write() override;
+  std::string wait_read() override;
 
  private:
   void empty_bucket();
@@ -30,9 +32,10 @@ class s3 : public storage_interface {
   Aws::S3::Model::PutObjectRequest make_put_request(const std::string& key, const std::string &value) const;
   Aws::S3::Model::GetObjectRequest make_get_request(const std::string& key) const;
   std::string parse_get_response(Aws::S3::Model::GetObjectOutcome& outcome) const;
+  void parse_put_response(Aws::S3::Model::PutObjectOutcome& outcome) const;
 
-  std::vector<Aws::S3::Model::PutObjectOutcomeCallable> m_put_callables;
-  std::vector<Aws::S3::Model::GetObjectOutcomeCallable> m_get_callables;
+  queue<Aws::S3::Model::PutObjectOutcomeCallable> m_put_callables;
+  queue<Aws::S3::Model::GetObjectOutcomeCallable> m_get_callables;
   Aws::String m_bucket_name;
   std::shared_ptr<Aws::S3::S3Client> m_client;
   Aws::SDKOptions m_options;

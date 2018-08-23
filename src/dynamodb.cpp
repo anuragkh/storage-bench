@@ -115,30 +115,19 @@ void dynamodb::destroy() {
 }
 
 void dynamodb::write_async(const std::string &key, const std::string &value) {
-  m_put_callables.push_back(m_client->PutItemCallable(make_put_request(key, value)));
+  m_put_callables.push(m_client->PutItemCallable(make_put_request(key, value)));
 }
 
 void dynamodb::read_async(const std::string &key) {
-  m_get_callables.push_back(m_client->GetItemCallable(make_get_request(key)));
+  m_get_callables.push(m_client->GetItemCallable(make_get_request(key)));
 }
 
-void dynamodb::wait_writes() {
-  for (auto &callable: m_put_callables) {
-    auto outcome = callable.get();
-    if (!outcome.IsSuccess())
-      throw std::runtime_error(outcome.GetError().GetMessage().c_str());
-  }
-  m_put_callables.clear();
+void dynamodb::wait_write() {
+  parse_put_response(m_put_callables.pop().get());
 }
 
-void dynamodb::wait_reads(std::vector<std::string> &results) {
-  for (auto &callable: m_get_callables) {
-    auto outcome = callable.get();
-    if (!outcome.IsSuccess())
-      throw std::runtime_error(outcome.GetError().GetMessage().c_str());
-    results.push_back(parse_get_response(outcome));
-  }
-  m_get_callables.clear();
+std::string dynamodb::wait_read() {
+  return parse_get_response(m_get_callables.pop().get());
 }
 
 PutItemRequest dynamodb::make_put_request(const std::string &key, const std::string &value) const {

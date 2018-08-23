@@ -1,7 +1,9 @@
 #ifndef STORAGE_BENCH_REDIS_H
 #define STORAGE_BENCH_REDIS_H
 
+#include <queue>
 #include "storage_interface.h"
+#include "queue.h"
 #include <cpp_redis/cpp_redis>
 
 class redis : public storage_interface {
@@ -12,8 +14,8 @@ class redis : public storage_interface {
   void destroy() override;
   void write_async(const std::string &key, const std::string &value) override;
   void read_async(const std::string &key) override;
-  void wait_writes() override;
-  void wait_reads(std::vector<std::string> &results) override;
+  void wait_write() override;
+  std::string wait_read() override;
 
  private:
   std::future<cpp_redis::reply> send_write(const std::string &key, const std::string &value);
@@ -24,8 +26,8 @@ class redis : public storage_interface {
 
   std::shared_ptr<cpp_redis::client> m_client;
 
-  std::vector<std::future<cpp_redis::reply>> m_get_futures;
-  std::vector<std::future<cpp_redis::reply>> m_put_futures;
+  queue<std::future<cpp_redis::reply>> m_get_futures;
+  queue<std::future<cpp_redis::reply>> m_put_futures;
 };
 
 #endif //STORAGE_BENCH_REDIS_H

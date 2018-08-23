@@ -5,6 +5,7 @@
 
 #include <aws/dynamodb/DynamoDBClient.h>
 #include <aws/core/Aws.h>
+#include "queue.h"
 
 class dynamodb: public storage_interface {
  public:
@@ -20,8 +21,8 @@ class dynamodb: public storage_interface {
   void destroy() override;
   void write_async(const std::string &key, const std::string &value) override;
   void read_async(const std::string &key) override;
-  void wait_writes() override;
-  void wait_reads(std::vector<std::string> &results) override;
+  void wait_write() override;
+  std::string wait_read() override;
 
  private:
   Aws::DynamoDB::Model::PutItemRequest make_put_request(const std::string &key, const std::string &value) const;
@@ -29,8 +30,8 @@ class dynamodb: public storage_interface {
   void parse_put_response(const Aws::DynamoDB::Model::PutItemOutcome& outcome) const;
   std::string parse_get_response(const Aws::DynamoDB::Model::GetItemOutcome& outcome) const;
 
-  std::vector<Aws::DynamoDB::Model::PutItemOutcomeCallable> m_put_callables;
-  std::vector<Aws::DynamoDB::Model::GetItemOutcomeCallable> m_get_callables;
+  queue<Aws::DynamoDB::Model::PutItemOutcomeCallable> m_put_callables;
+  queue<Aws::DynamoDB::Model::GetItemOutcomeCallable> m_get_callables;
   Aws::String m_table_name;
   std::shared_ptr<Aws::DynamoDB::DynamoDBClient> m_client;
   Aws::SDKOptions m_options;

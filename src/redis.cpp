@@ -36,25 +36,21 @@ void redis::destroy() {
 }
 
 void redis::write_async(const std::string &key, const std::string &value) {
-  m_put_futures.push_back(send_write(key, value));
+  m_put_futures.push(send_write(key, value));
 }
 
 void redis::read_async(const std::string &key) {
-  m_get_futures.push_back(send_read(key));
+  m_get_futures.push(send_read(key));
 }
 
-void redis::wait_writes() {
-  for (auto &fut: m_put_futures) {
-    parse_write_response(fut.get());
-  }
-  m_put_futures.clear();
+void redis::wait_write() {
+  auto reply = m_put_futures.pop().get();
+  parse_write_response(reply);
 }
 
-void redis::wait_reads(std::vector<std::string> &results) {
-  for (auto &fut: m_get_futures) {
-    results.push_back(parse_read_response(fut.get()));
-  }
-  m_get_futures.clear();
+std::string redis::wait_read() {
+  auto reply = m_get_futures.pop().get();
+  return parse_read_response(reply);
 }
 
 std::future<cpp_redis::reply> redis::send_write(const std::string &key, const std::string &value) {
