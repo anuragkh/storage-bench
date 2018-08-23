@@ -15,23 +15,13 @@ void redis::init(const storage_interface::property_map &conf) {
 }
 
 void redis::write(const std::string &key, const std::string &value) {
-  auto fut = m_client->set(key, value);
-  m_client->sync_commit();
-  auto reply = fut.get();
-  if (reply.is_error()) {
-    throw std::runtime_error(reply.error());
-  }
+  auto fut = send_write(key, value);
+  parse_write_response(fut.get());
 }
 
 std::string redis::read(const std::string &key) {
-  auto fut = m_client->get(key);
-  m_client->sync_commit();
-  auto reply = fut.get();
-  if (reply.is_error()) {
-    throw std::runtime_error(reply.error());
-  }
-  auto value = reply.as_string();
-  return value;
+  auto fut = send_read(key);
+  return parse_read_response(fut.get());
 }
 
 void redis::destroy() {
@@ -43,6 +33,53 @@ void redis::destroy() {
     exit(-1);
   }
   m_client->disconnect(true);
+}
+
+void redis::write_async(const std::string &key, const std::string &value) {
+  m_put_futures.push_back(send_write(key, value));
+}
+
+void redis::read_async(const std::string &key) {
+  m_get_futures.push_back(send_read(key));
+}
+
+void redis::wait_writes() {
+  for (auto &fut: m_put_futures) {
+    parse_write_response(fut.get());
+  }
+  m_put_futures.clear();
+}
+
+void redis::wait_reads(std::vector<std::string> &results) {
+  for (auto &fut: m_get_futures) {
+    results.push_back(parse_read_response(fut.get()));
+  }
+  m_get_futures.clear();
+}
+
+std::future<cpp_redis::reply> redis::send_write(const std::string &key, const std::string &value) {
+  auto fut = m_client->set(key, value);
+  m_client->commit();
+  return fut;
+}
+
+std::future<cpp_redis::reply> redis::send_read(const std::string &key) {
+  auto fut = m_client->get(key);
+  m_client->commit();
+  return fut;
+}
+
+std::string redis::parse_read_response(const cpp_redis::reply &r) {
+  if (r.is_error()) {
+    throw std::runtime_error(r.error());
+  }
+  return r.as_string();
+}
+
+void redis::parse_write_response(const cpp_redis::reply &r) {
+  if (r.is_error()) {
+    throw std::runtime_error(r.error());
+  }
 }
 
 REGISTER_STORAGE_IFACE("redis", redis);

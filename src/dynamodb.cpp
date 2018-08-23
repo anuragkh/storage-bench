@@ -89,36 +89,11 @@ void dynamodb::init(const property_map &conf) {
 }
 
 void dynamodb::write(const std::string &key, const std::string &value) {
-  PutItemRequest request;
-  request.SetTableName(m_table_name);
-  AttributeValue key_attr;
-  key_attr.SetS(key.c_str());
-  request.AddItem(HASH_KEY_NAME, key_attr);
-  AttributeValue value_attr;
-  value_attr.SetS(value.c_str());
-  request.AddItem(VALUE_NAME, value_attr);
-
-  auto outcome = m_client->PutItem(request);
-  if (!outcome.IsSuccess()) {
-    throw std::runtime_error(outcome.GetError().GetMessage().c_str());
-  }
+  parse_put_response(m_client->PutItem(make_put_request(key, value)));
 }
 
 std::string dynamodb::read(const std::string &key) {
-  GetItemRequest request;
-  AttributeValue hashKey;
-  hashKey.SetS(key.c_str());
-  request.AddKey(HASH_KEY_NAME, hashKey);
-  request.SetTableName(m_table_name);
-
-  Aws::Vector<Aws::String> attributesToGet;
-  attributesToGet.push_back(HASH_KEY_NAME);
-  attributesToGet.push_back(VALUE_NAME);
-  auto outcome = m_client->GetItem(request);
-  if (!outcome.IsSuccess()) {
-    throw std::runtime_error(outcome.GetError().GetMessage().c_str());
-  }
-  return std::string(outcome.GetResult().GetItem().at(HASH_KEY_NAME).GetS().data());
+  return parse_get_response(m_client->GetItem(make_get_request(key)));
 }
 
 void dynamodb::destroy() {
@@ -137,6 +112,67 @@ void dynamodb::destroy() {
     }
     return;
   }
+}
+
+void dynamodb::write_async(const std::string &key, const std::string &value) {
+  m_put_callables.push_back(m_client->PutItemCallable(make_put_request(key, value)));
+}
+
+void dynamodb::read_async(const std::string &key) {
+  m_get_callables.push_back(m_client->GetItemCallable(make_get_request(key)));
+}
+
+void dynamodb::wait_writes() {
+  for (auto &callable: m_put_callables) {
+    auto outcome = callable.get();
+    if (!outcome.IsSuccess())
+      throw std::runtime_error(outcome.GetError().GetMessage().c_str());
+  }
+  m_put_callables.clear();
+}
+
+void dynamodb::wait_reads(std::vector<std::string> &results) {
+  for (auto &callable: m_get_callables) {
+    auto outcome = callable.get();
+    if (!outcome.IsSuccess())
+      throw std::runtime_error(outcome.GetError().GetMessage().c_str());
+    results.push_back(parse_get_response(outcome));
+  }
+  m_get_callables.clear();
+}
+
+PutItemRequest dynamodb::make_put_request(const std::string &key, const std::string &value) const {
+  PutItemRequest request;
+  request.SetTableName(m_table_name);
+  AttributeValue key_attr;
+  key_attr.SetS(key.c_str());
+  request.AddItem(HASH_KEY_NAME, key_attr);
+  AttributeValue value_attr;
+  value_attr.SetS(value.c_str());
+  request.AddItem(VALUE_NAME, value_attr);
+  return request;
+}
+
+GetItemRequest dynamodb::make_get_request(const std::string &key) const {
+  GetItemRequest request;
+  AttributeValue hashKey;
+  hashKey.SetS(key.c_str());
+  request.AddKey(HASH_KEY_NAME, hashKey);
+  request.SetTableName(m_table_name);
+  return request;
+}
+
+void dynamodb::parse_put_response(const Aws::DynamoDB::Model::PutItemOutcome &outcome) const {
+  if (!outcome.IsSuccess()) {
+    throw std::runtime_error(outcome.GetError().GetMessage().c_str());
+  }
+}
+
+std::string dynamodb::parse_get_response(const GetItemOutcome &outcome) const {
+  if (!outcome.IsSuccess()) {
+    throw std::runtime_error(outcome.GetError().GetMessage().c_str());
+  }
+  return std::string(outcome.GetResult().GetItem().at(HASH_KEY_NAME).GetS().data());
 }
 
 REGISTER_STORAGE_IFACE("dynamodb", dynamodb);

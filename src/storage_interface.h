@@ -17,6 +17,12 @@ class storage_interface {
   virtual std::string read(const std::string &key) = 0;
   virtual void destroy() = 0;
 
+  virtual void write_async(const std::string &key, const std::string &value) = 0;
+  virtual void read_async(const std::string &key) = 0;
+
+  virtual void wait_writes() = 0;
+  virtual void wait_reads(std::vector<std::string>& results) = 0;
+
   static std::string random_string(size_t length);
 };
 

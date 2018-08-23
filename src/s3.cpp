@@ -57,30 +57,18 @@ void s3::init(const storage_interface::property_map &conf) {
 }
 
 void s3::write(const std::string &key, const std::string &value) {
-  Aws::S3::Model::PutObjectRequest request;
-  request.WithBucket(m_bucket_name).WithKey(key.c_str());
-
-  Aws::Utils::Stream::SimpleStreamBuf sbuf;
-  auto out = Aws::MakeShared<Aws::IOStream>("StreamBuf", &sbuf);
-  out->write(value.c_str(), value.length());
-  out->seekg(0, std::ios_base::beg);
-  request.SetBody(out);
-  auto outcome = m_client->PutObject(request);
+  auto outcome = m_client->PutObject(make_put_request(key, value));
   if (!outcome.IsSuccess()) {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
 }
 
 std::string s3::read(const std::string &key) {
-  Aws::S3::Model::GetObjectRequest request;
-  request.WithBucket(m_bucket_name).WithKey(key.c_str());
-
-  auto outcome = m_client->GetObject(request);
+  auto outcome = m_client->GetObject(make_get_request(key));
   if (!outcome.IsSuccess()) {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
-  auto in = std::make_shared<Aws::IOStream>(outcome.GetResult().GetBody().rdbuf());
-  return std::string(std::istreambuf_iterator<char>(*in), std::istreambuf_iterator<char>());
+  return parse_get_response(outcome);
 }
 
 void s3::destroy() {
@@ -156,6 +144,55 @@ bool s3::wait_for_bucket_to_propagate() {
   }
 
   return false;
+}
+
+void s3::write_async(const std::string &key, const std::string &value) {
+  m_put_callables.push_back(m_client->PutObjectCallable(make_put_request(key, value)));
+}
+
+void s3::read_async(const std::string &key) {
+  m_get_callables.push_back(m_client->GetObjectCallable(make_get_request(key)));
+}
+
+void s3::wait_writes() {
+  for (auto &callable: m_put_callables) {
+    auto outcome = callable.get();
+    if (!outcome.IsSuccess())
+      throw std::runtime_error(outcome.GetError().GetMessage().c_str());
+  }
+  m_put_callables.clear();
+}
+
+void s3::wait_reads(std::vector<std::string> &results) {
+  for (auto &callable: m_get_callables) {
+    auto outcome = callable.get();
+    if (!outcome.IsSuccess())
+      throw std::runtime_error(outcome.GetError().GetMessage().c_str());
+    results.push_back(parse_get_response(outcome));
+  }
+  m_get_callables.clear();
+}
+
+Aws::S3::Model::PutObjectRequest s3::make_put_request(const std::string &key, const std::string &value) const {
+  Aws::S3::Model::PutObjectRequest request;
+  request.WithBucket(m_bucket_name).WithKey(key.c_str());
+
+  Aws::Utils::Stream::SimpleStreamBuf sbuf;
+  auto out = Aws::MakeShared<Aws::IOStream>("StreamBuf", &sbuf);
+  out->write(value.c_str(), value.length());
+  out->seekg(0, std::ios_base::beg);
+  request.SetBody(out);
+  return request;
+}
+
+Aws::S3::Model::GetObjectRequest s3::make_get_request(const std::string &key) const {
+  Aws::S3::Model::GetObjectRequest request;
+  request.WithBucket(m_bucket_name).WithKey(key.c_str());
+  return request;
+}
+std::string s3::parse_get_response(Aws::S3::Model::GetObjectOutcome &outcome) const {
+  auto in = std::make_shared<Aws::IOStream>(outcome.GetResult().GetBody().rdbuf());
+  return std::string(std::istreambuf_iterator<char>(*in), std::istreambuf_iterator<char>());
 }
 
 REGISTER_STORAGE_IFACE("s3", s3);

@@ -10,6 +10,10 @@ class memorymux: public storage_interface {
   void write(const std::string &key, const std::string &value) override;
   std::string read(const std::string &key) override;
   void destroy() override;
+  void write_async(const std::string &key, const std::string &value) override;
+  void read_async(const std::string &key) override;
+  void wait_writes() override;
+  void wait_reads(std::vector<std::string> &results) override;
 
  private:
   std::string m_mmux_path;

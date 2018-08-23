@@ -18,8 +18,19 @@ class dynamodb: public storage_interface {
   void write(const std::string &key, const std::string &value) override;
   std::string read(const std::string &key) override;
   void destroy() override;
+  void write_async(const std::string &key, const std::string &value) override;
+  void read_async(const std::string &key) override;
+  void wait_writes() override;
+  void wait_reads(std::vector<std::string> &results) override;
 
  private:
+  Aws::DynamoDB::Model::PutItemRequest make_put_request(const std::string &key, const std::string &value) const;
+  Aws::DynamoDB::Model::GetItemRequest make_get_request(const std::string &key) const;
+  void parse_put_response(const Aws::DynamoDB::Model::PutItemOutcome& outcome) const;
+  std::string parse_get_response(const Aws::DynamoDB::Model::GetItemOutcome& outcome) const;
+
+  std::vector<Aws::DynamoDB::Model::PutItemOutcomeCallable> m_put_callables;
+  std::vector<Aws::DynamoDB::Model::GetItemOutcomeCallable> m_get_callables;
   Aws::String m_table_name;
   std::shared_ptr<Aws::DynamoDB::DynamoDBClient> m_client;
   Aws::SDKOptions m_options;
