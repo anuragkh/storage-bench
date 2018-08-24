@@ -93,6 +93,7 @@ void dynamodb::write(const std::string &key, const std::string &value) {
 }
 
 std::string dynamodb::read(const std::string &key) {
+  std::cout << "Read key = " << key << std::endl;
   return parse_get_response(m_client->GetItem(make_get_request(key)));
 }
 
