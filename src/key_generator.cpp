@@ -6,6 +6,10 @@ std::string sequential_key_generator::next() {
   return std::to_string(cur_key_++);
 }
 
+void sequential_key_generator::reset() {
+  cur_key_ = 0;
+}
+
 zipf_key_generator::zipf_key_generator(double theta, uint64_t n)
     : theta_(theta), n_(n), zdist_(new double[n]), dist_(0, 1) {
   rng_.seed(std::random_device()());
@@ -54,4 +58,8 @@ std::string zipf_key_generator::next() {
   }
 
   return std::to_string(lo);
+}
+
+void zipf_key_generator::reset() {
+  // Do nothing
 }

@@ -9,6 +9,7 @@ class sequential_key_generator {
   sequential_key_generator() = default;
 
   std::string next();
+  void reset();
 
  private:
   size_t cur_key_{0};
@@ -25,6 +26,7 @@ class zipf_key_generator {
   ~zipf_key_generator();
 
   std::string next();
+  void reset();
 
  private:
   void gen_zipf();
