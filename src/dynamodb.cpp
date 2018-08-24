@@ -166,7 +166,7 @@ std::string dynamodb::parse_get_response(const GetItemOutcome &outcome) const {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
   for (auto elem: outcome.GetResult().GetItem()) {
-    std::cout << elem.first << ": " << elem.second << std::endl;
+    std::cout << elem.first << ": " << elem.second.GetS() << std::endl;
   }
   return std::string(outcome.GetResult().GetItem().at(HASH_KEY_NAME).GetS().data());
 }
