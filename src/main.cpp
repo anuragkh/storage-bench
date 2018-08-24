@@ -18,6 +18,8 @@ int main(int argc, char **argv) {
   std::string result_prefix = argv[3];
   size_t value_size = std::stoull(argv[4]);
   int32_t mode = 0;
+  bool async = false;
+  double rate = 0.0;
   std::string m(argv[5]);
   if (m.find("read") != std::string::npos) {
     mode |= BENCHMARK_READ;
@@ -27,6 +29,14 @@ int main(int argc, char **argv) {
   }
   if (m.find("destroy") != std::string::npos) {
     mode |= BENCHMARK_DESTROY;
+  }
+  size_t async_pos;
+  if ((async_pos = m.find("async{")) != std::string::npos) {
+    size_t rbeg = async_pos + 6;
+    size_t rend = m.find('}', rbeg);
+    size_t len = rend - rbeg;
+    rate = std::stod(m.substr(rbeg, len));
+    async = true;
   }
   size_t n_ops = std::stoull(argv[6]);
   bool warm_up = static_cast<bool>(std::stod(argv[7]));
@@ -48,12 +58,20 @@ int main(int argc, char **argv) {
     auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
     auto remaining = timeout - (benchmark::now_us() - begin);
-    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
+    if (async) {
+      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, rate, value_size, n_ops, warm_up, mode, remaining);
+    } else {
+      benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
+    }
   } else if (!strcmp(argv[8], "sequential")) {
     auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<sequential_key_generator>();
     auto remaining = timeout - (benchmark::now_us() - begin);
-    benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
+    if (async) {
+      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, rate, value_size, n_ops, warm_up, mode, remaining);
+    } else {
+      benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
+    }
   } else {
     std::cerr << "Unknown key distribution: " << argv[8] << std::endl;
   }

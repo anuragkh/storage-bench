@@ -5,7 +5,9 @@
 #include <chrono>
 #include <fstream>
 #include <memory>
+#include <thread>
 #include "storage_interface.h"
+#include "rate_limiter.h"
 
 #ifndef ERROR_MAX
 #define ERROR_MAX 1000
@@ -142,6 +144,272 @@ class benchmark {
     if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY) {
       s_if->destroy();
       std::cerr << "Destroyed storage interface." << std::endl;
+    }
+  }
+
+  template<typename K>
+  static void send_writes(const std::shared_ptr<storage_interface> &s_if,
+                          const std::shared_ptr<K> key_gen,
+                          const std::shared_ptr<rate_limiter> &limiter,
+                          const std::string &output_path,
+                          size_t value_size,
+                          size_t num_ops,
+                          bool warm_up,
+                          uint64_t start_us,
+                          uint64_t max_us) {
+    int err_count = 0;
+    size_t warm_up_ops = num_ops / 10;
+    std::string value(value_size, 'x');
+    std::ofstream tw(output_path + "_write_send.txt");
+    if (warm_up) {
+      std::cerr << "[SEND] Warm-up writes..." << std::endl;
+      for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i++) {
+        try {
+          limiter->acquire();
+          s_if->write_async(key_gen->next(), value);
+        } catch (std::runtime_error &e) {
+          --i;
+          ++err_count;
+          if (err_count > ERROR_MAX) {
+            std::cerr << "[SEND] Too many errors" << std::endl;
+            s_if->destroy();
+            std::cerr << "[SEND] Destroyed storage interface." << std::endl;
+            exit(1);
+          }
+        }
+      }
+    }
+
+    std::cerr << "[SEND] Starting writes..." << std::endl;
+    auto w_begin = now_us();
+    size_t i;
+    for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
+      try {
+        s_if->write_async(key_gen->next(), value);
+      } catch (std::runtime_error &e) {
+        --i;
+        ++err_count;
+        if (err_count > ERROR_MAX) {
+          std::cerr << "[SEND] Too many errors" << std::endl;
+          s_if->destroy();
+          std::cerr << "[SEND] Destroyed storage interface." << std::endl;
+          exit(1);
+        }
+      }
+    }
+    auto w_end = now_us();
+    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
+    std::cerr << "Finished writes." << std::endl;
+
+    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
+    tw.close();
+  }
+
+  static void recv_writes(const std::shared_ptr<storage_interface> &s_if,
+                          const std::string &output_path,
+                          size_t num_ops,
+                          bool warm_up,
+                          uint64_t start_us,
+                          uint64_t max_us) {
+    int err_count = 0;
+    size_t warm_up_ops = num_ops / 10;
+    std::ofstream tw(output_path + "_write_recv.txt");
+    if (warm_up) {
+      std::cerr << "[RECV] Warm-up writes..." << std::endl;
+      for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i++) {
+        try {
+          s_if->wait_write();
+        } catch (std::runtime_error &e) {
+          --i;
+          ++err_count;
+          if (err_count > ERROR_MAX) {
+            std::cerr << "[RECV] Too many errors" << std::endl;
+            s_if->destroy();
+            std::cerr << "[RECV] Destroyed storage interface." << std::endl;
+            exit(1);
+          }
+        }
+      }
+    }
+
+    std::cerr << "[RECV] Starting writes..." << std::endl;
+    auto w_begin = now_us();
+    size_t i;
+    for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
+      try {
+        s_if->wait_write();
+      } catch (std::runtime_error &e) {
+        --i;
+        ++err_count;
+        if (err_count > ERROR_MAX) {
+          std::cerr << "[RECV] Too many errors" << std::endl;
+          s_if->destroy();
+          std::cerr << "[RECV] Destroyed storage interface." << std::endl;
+          exit(1);
+        }
+      }
+    }
+    auto w_end = now_us();
+    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
+    std::cerr << "Finished writes." << std::endl;
+
+    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
+    tw.close();
+  }
+
+  template<typename K>
+  static void send_reads(const std::shared_ptr<storage_interface> &s_if,
+                         const std::shared_ptr<K> key_gen,
+                         const std::shared_ptr<rate_limiter> &limiter,
+                         const std::string &output_path,
+                         size_t num_ops,
+                         bool warm_up,
+                         uint64_t start_us,
+                         uint64_t max_us) {
+    int err_count = 0;
+    size_t warm_up_ops = num_ops / 10;
+    std::ofstream tw(output_path + "_read_send.txt");
+    if (warm_up) {
+      std::cerr << "[SEND] Warm-up reads..." << std::endl;
+      for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i++) {
+        try {
+          limiter->acquire();
+          s_if->read_async(key_gen->next());
+        } catch (std::runtime_error &e) {
+          --i;
+          ++err_count;
+          if (err_count > ERROR_MAX) {
+            std::cerr << "[SEND] Too many errors" << std::endl;
+            s_if->destroy();
+            std::cerr << "[SEND] Destroyed storage interface." << std::endl;
+            exit(1);
+          }
+        }
+      }
+    }
+
+    std::cerr << "[SEND] Starting reads..." << std::endl;
+    auto w_begin = now_us();
+    size_t i;
+    for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
+      try {
+        s_if->read_async(key_gen->next());
+      } catch (std::runtime_error &e) {
+        --i;
+        ++err_count;
+        if (err_count > ERROR_MAX) {
+          std::cerr << "[SEND] Too many errors" << std::endl;
+          s_if->destroy();
+          std::cerr << "[SEND] Destroyed storage interface." << std::endl;
+          exit(1);
+        }
+      }
+    }
+    auto w_end = now_us();
+    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
+    std::cerr << "Finished reads." << std::endl;
+
+    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
+    tw.close();
+  }
+
+  static void recv_reads(const std::shared_ptr<storage_interface> &s_if,
+                         const std::string &output_path,
+                         size_t num_ops,
+                         bool warm_up,
+                         uint64_t start_us,
+                         uint64_t max_us) {
+    int err_count = 0;
+    size_t warm_up_ops = num_ops / 10;
+    std::ofstream tw(output_path + "_read_recv.txt");
+    if (warm_up) {
+      std::cerr << "[RECV] Warm-up reads..." << std::endl;
+      for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i++) {
+        try {
+          s_if->wait_read();
+        } catch (std::runtime_error &e) {
+          --i;
+          ++err_count;
+          if (err_count > ERROR_MAX) {
+            std::cerr << "[RECV] Too many errors" << std::endl;
+            s_if->destroy();
+            std::cerr << "[RECV] Destroyed storage interface." << std::endl;
+            exit(1);
+          }
+        }
+      }
+    }
+
+    std::cerr << "[RECV] Starting reads..." << std::endl;
+    auto w_begin = now_us();
+    size_t i;
+    for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
+      try {
+        s_if->wait_read();
+      } catch (std::runtime_error &e) {
+        --i;
+        ++err_count;
+        if (err_count > ERROR_MAX) {
+          std::cerr << "[RECV] Too many errors" << std::endl;
+          s_if->destroy();
+          std::cerr << "[RECV] Destroyed storage interface." << std::endl;
+          exit(1);
+        }
+      }
+    }
+    auto w_end = now_us();
+    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
+    std::cerr << "Finished reads." << std::endl;
+
+    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
+    tw.close();
+  }
+
+  template<typename K>
+  static void run_async(const std::shared_ptr<storage_interface> &s_if,
+                        const storage_interface::property_map &conf,
+                        const std::shared_ptr<K> key_gen,
+                        const std::string &output_path,
+                        double rate,
+                        size_t value_size,
+                        size_t num_ops,
+                        bool warm_up,
+                        int32_t mode,
+                        uint64_t max_us) {
+
+    auto start_us = now_us();
+
+    std::cerr << "Initializing storage interface..." << std::endl;
+    s_if->init(conf);
+
+    if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
+      std::thread recv_thread([=]() {
+        benchmark::recv_writes(s_if, output_path, num_ops, warm_up, start_us, max_us);
+      });
+      benchmark::send_writes(s_if,
+                             key_gen,
+                             std::make_shared<rate_limiter>(rate),
+                             output_path,
+                             value_size,
+                             num_ops,
+                             warm_up,
+                             start_us,
+                             max_us);
+      recv_thread.join();
+    }
+
+    if ((mode & BENCHMARK_READ) == BENCHMARK_READ) {
+      std::thread recv_thread([=] {
+        benchmark::recv_reads(s_if, output_path, num_ops, warm_up, start_us, max_us);
+      });
+      benchmark::send_reads(s_if,
+                            key_gen,
+                            std::make_shared<rate_limiter>(rate),
+                            output_path,
+                            num_ops,
+                            warm_up,
+                            start_us,
+                            max_us);
     }
   }
 
