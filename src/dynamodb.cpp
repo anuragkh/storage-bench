@@ -151,6 +151,7 @@ GetItemRequest dynamodb::make_get_request(const std::string &key) const {
   Aws::Vector<Aws::String> attributesToGet;
   attributesToGet.push_back(HASH_KEY_NAME);
   attributesToGet.push_back(VALUE_NAME);
+  request.SetAttributesToGet(attributesToGet);
   return request;
 }
 
