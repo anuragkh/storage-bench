@@ -89,7 +89,7 @@ class benchmark {
       tw.close();
     }
 
-    key_gen.reset();
+    key_gen->reset();
 
     if ((mode & BENCHMARK_READ) == BENCHMARK_READ) {
       std::ofstream lr(output_path + "_read_latency.txt");
@@ -400,7 +400,7 @@ class benchmark {
       recv_thread.join();
     }
 
-    key_gen.reset();
+    key_gen->reset();
 
     if ((mode & BENCHMARK_READ) == BENCHMARK_READ) {
       std::thread recv_thread([=] {
