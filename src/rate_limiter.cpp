@@ -1,5 +1,7 @@
 #include "rate_limiter.h"
 
+#include <thread>
+
 rate_limiter::rate_limiter() : m_interval(0), m_max_permits(0), m_stored_permits(0), m_next_free(0) {}
 
 rate_limiter::rate_limiter(double rate) : m_interval(0), m_max_permits(0), m_stored_permits(0), m_next_free(0) {
