@@ -62,7 +62,7 @@ void dynamodb::init(const property_map &conf) {
         std::cerr << "Error creating table " << m_table_name << ": " << outcome.GetError().GetExceptionName() << std::endl;
         exit(1);
       } else {
-        std::cerr << "Table " << m_table_name << " already exists";
+        std::cerr << "Table " << m_table_name << " already exists" << std::endl;
       }
     }
   }
@@ -166,6 +166,7 @@ std::string dynamodb::parse_get_response(const GetItemOutcome &outcome) const {
   if (!outcome.IsSuccess()) {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
+  std::cout << "Num elements: " << outcome.GetResult().GetItem().size() << std::endl;
   for (auto elem: outcome.GetResult().GetItem()) {
     std::cout << elem.first << ": " << elem.second.GetS() << std::endl;
   }
