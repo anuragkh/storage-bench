@@ -6,6 +6,7 @@
 #include <aws/s3/S3Client.h>
 #include <aws/s3/model/PutObjectRequest.h>
 #include <aws/s3/model/GetObjectRequest.h>
+#include <aws/core/utils/stream/SimpleStreamBuf.h>
 #include "storage_interface.h"
 #include "queue.h"
 
@@ -39,6 +40,8 @@ class s3 : public storage_interface {
   Aws::String m_bucket_name;
   std::shared_ptr<Aws::S3::S3Client> m_client;
   Aws::SDKOptions m_options;
+
+  Aws::Utils::Stream::SimpleStreamBuf m_sbuf;
 };
 
 #endif //STORAGE_BENCH_S_3_H
