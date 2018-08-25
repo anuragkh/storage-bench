@@ -157,10 +157,10 @@ Aws::S3::Model::PutObjectRequest s3::make_put_request(const std::string &key, co
   Aws::S3::Model::PutObjectRequest request;
   request.WithBucket(m_bucket_name).WithKey(key.c_str());
 
-  auto out = Aws::MakeShared<Aws::IOStream>("StreamBuf", &m_sbuf);
-  out->write(value.c_str(), value.length());
-  out->seekg(0, std::ios_base::beg);
-  request.SetBody(out);
+  auto objectStream = Aws::MakeShared<Aws::StringStream>("DataStream");
+  *objectStream << value;
+  objectStream->flush();
+  request.SetBody(objectStream);
   return request;
 }
 

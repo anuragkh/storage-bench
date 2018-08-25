@@ -40,8 +40,6 @@ class s3 : public storage_interface {
   Aws::String m_bucket_name;
   std::shared_ptr<Aws::S3::S3Client> m_client;
   Aws::SDKOptions m_options;
-
-  Aws::Utils::Stream::SimpleStreamBuf m_sbuf;
 };
 
 #endif //STORAGE_BENCH_S_3_H
