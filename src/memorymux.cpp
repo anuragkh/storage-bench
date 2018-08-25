@@ -1,11 +1,19 @@
 #include "memorymux.h"
 
-void memorymux::init(const storage_interface::property_map &conf) {
+void memorymux::init(const property_map &conf, bool create) {
   m_mmux_client = std::make_shared<mmux::client::mmux_client>(conf.get<std::string>("host", "127.0.0.1"),
                                                               conf.get<int>("service_port", 9090),
                                                               conf.get<int>("lease_port", 9091));
   m_mmux_path = conf.get<std::string>("path", "/test");
-  m_client = m_mmux_client->open_or_create(m_mmux_path, "local://tmp");
+  if (m_mmux_path == "/test") {
+    m_mmux_path += random_string(10);
+    create = true;
+  }
+  if (create) {
+    m_client = m_mmux_client->create(m_mmux_path, "local://tmp");
+  } else {
+    m_client = m_mmux_client->open(m_mmux_path);
+  }
 }
 
 void memorymux::write(const std::string &key, const std::string &value) {

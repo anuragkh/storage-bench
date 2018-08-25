@@ -22,7 +22,7 @@ s3::~s3() {
   Aws::ShutdownAPI(m_options);
 }
 
-void s3::init(const storage_interface::property_map &conf) {
+void s3::init(const property_map &conf, bool create) {
   // Create a client
   ClientConfiguration config;
   m_client = Aws::MakeShared<S3Client>("S3Benchmark", config);
@@ -31,6 +31,7 @@ void s3::init(const storage_interface::property_map &conf) {
   auto bucket_name = conf.get<std::string>("bucket_name", "test");
   if (bucket_name == "test") {
     bucket_name += (std::string(".") + random_string(10));
+    create = true;
   }
   m_bucket_name = Aws::String(bucket_name.data());
 
@@ -38,20 +39,15 @@ void s3::init(const storage_interface::property_map &conf) {
   request.SetBucket(m_bucket_name);
   request.SetACL(BucketCannedACL::private_);
 
-  auto outcome = m_client->CreateBucket(request);
-  bool already_exists = false;
-  if (!outcome.IsSuccess()) {
-    auto exception_name = outcome.GetError().GetExceptionName();
-    if (exception_name != "BucketAlreadyExists" && exception_name != "OperationAborted") {
+  if (create) {
+    auto outcome = m_client->CreateBucket(request);
+    if (!outcome.IsSuccess()) {
+      auto exception_name = outcome.GetError().GetExceptionName();
       std::cerr << "Failed to create bucket " << bucket_name << ": [" << exception_name << "]" << std::endl;
       exit(1);
-    } else {
-      already_exists = true;
-      std::cerr << "Bucket " << bucket_name << " already exists";
     }
-  }
-  if (!already_exists)
     wait_for_bucket_to_propagate();
+  }
 }
 
 void s3::write(const std::string &key, const std::string &value) {

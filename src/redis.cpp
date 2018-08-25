@@ -1,6 +1,6 @@
 #include "redis.h"
 
-void redis::init(const storage_interface::property_map &conf) {
+void redis::init(const property_map &conf, bool) {
   m_client = std::make_shared<cpp_redis::client>();
   m_client->connect(conf.get<std::string>("host", "127.0.0.1"),
                     conf.get<size_t>("port", 6379),

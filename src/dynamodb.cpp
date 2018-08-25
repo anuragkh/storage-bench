@@ -27,7 +27,7 @@ dynamodb::~dynamodb() {
   Aws::ShutdownAPI(m_options);
 }
 
-void dynamodb::init(const property_map &conf) {
+void dynamodb::init(const property_map &conf, bool create) {
   // Create a client
   ClientConfiguration config;
   m_client = Aws::MakeShared<DynamoDBClient>("DynamoDBBenchmark", config);
@@ -37,55 +37,14 @@ void dynamodb::init(const property_map &conf) {
   std::string table_name = conf.get<std::string>("table_name", "test");
   if (table_name == "test") {
     table_name += (std::string(".") + random_string(10));
+    create = true;
   }
   m_table_name = Aws::String(table_name.data());
 
-  {
-    CreateTableRequest request;
-    AttributeDefinition hashKey;
-    hashKey.SetAttributeName(HASH_KEY_NAME);
-    hashKey.SetAttributeType(ScalarAttributeType::S);
-    request.AddAttributeDefinitions(hashKey);
-    KeySchemaElement hashKeySchemaElement;
-    hashKeySchemaElement.WithAttributeName(HASH_KEY_NAME).WithKeyType(KeyType::HASH);
-    request.AddKeySchema(hashKeySchemaElement);
-
-    ProvisionedThroughput t;
-    t.SetReadCapacityUnits(conf.get<long long>("read_capacity", 10000));
-    t.SetWriteCapacityUnits(conf.get<long long>("write_capacity", 10000));
-    request.WithProvisionedThroughput(t);
-    request.WithTableName(m_table_name);
-
-    CreateTableOutcome outcome = m_client->CreateTable(request);
-    if (!outcome.IsSuccess()) {
-      if (outcome.GetError().GetExceptionName() != "ResourceInUseException") {
-        std::cerr << "Error creating table " << m_table_name << ": " << outcome.GetError().GetExceptionName() << std::endl;
-        exit(1);
-      } else {
-        std::cerr << "Table " << m_table_name << " already exists" << std::endl;
-      }
-    }
+  if (create) {
+    create_table(conf.get<long long>("read_capacity", 10000), conf.get<long long>("write_capacity", 10000));
   }
-
-  {
-    DescribeTableRequest request;
-    request.SetTableName(m_table_name);
-    DescribeTableOutcome outcome = m_client->DescribeTable(request);
-
-    while (true) {
-      if (!outcome.IsSuccess()) {
-        std::cerr << "Error waiting for table " << m_table_name << ":" << outcome.GetError().GetMessage() << std::endl;
-        exit(1);
-      }
-      if (outcome.GetResult().GetTable().GetTableStatus() == TableStatus::ACTIVE) {
-        break;
-      } else {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
-
-      outcome = m_client->DescribeTable(request);
-    }
-  }
+  wait_for_table();
 }
 
 void dynamodb::write(const std::string &key, const std::string &value) {
@@ -93,7 +52,6 @@ void dynamodb::write(const std::string &key, const std::string &value) {
 }
 
 std::string dynamodb::read(const std::string &key) {
-  std::cout << "Read key = " << key << std::endl;
   return parse_get_response(m_client->GetItem(make_get_request(key)));
 }
 
@@ -166,11 +124,55 @@ std::string dynamodb::parse_get_response(const GetItemOutcome &outcome) const {
   if (!outcome.IsSuccess()) {
     throw std::runtime_error(outcome.GetError().GetMessage().c_str());
   }
-  std::cout << "Num elements: " << outcome.GetResult().GetItem().size() << std::endl;
-  for (auto elem: outcome.GetResult().GetItem()) {
-    std::cout << elem.first << ": " << elem.second.GetS() << std::endl;
-  }
   return std::string(outcome.GetResult().GetItem().at(HASH_KEY_NAME).GetS().data());
+}
+
+void dynamodb::wait_for_table() {
+  DescribeTableRequest request;
+  request.SetTableName(m_table_name);
+  DescribeTableOutcome outcome = m_client->DescribeTable(request);
+
+  while (true) {
+    if (!outcome.IsSuccess()) {
+      std::cerr << "Error waiting for table " << m_table_name << ":" << outcome.GetError().GetMessage() << std::endl;
+      exit(1);
+    }
+    if (outcome.GetResult().GetTable().GetTableStatus() == TableStatus::ACTIVE) {
+      break;
+    } else {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    outcome = m_client->DescribeTable(request);
+  }
+}
+
+void dynamodb::create_table(long long read_capacity, long long write_capacity) {
+  CreateTableRequest request;
+  AttributeDefinition hashKey;
+  hashKey.SetAttributeName(HASH_KEY_NAME);
+  hashKey.SetAttributeType(ScalarAttributeType::S);
+  request.AddAttributeDefinitions(hashKey);
+  KeySchemaElement hashKeySchemaElement;
+  hashKeySchemaElement.WithAttributeName(HASH_KEY_NAME).WithKeyType(KeyType::HASH);
+  request.AddKeySchema(hashKeySchemaElement);
+
+  ProvisionedThroughput t;
+  t.SetReadCapacityUnits(read_capacity);
+  t.SetWriteCapacityUnits(write_capacity);
+  request.WithProvisionedThroughput(t);
+  request.WithTableName(m_table_name);
+
+  CreateTableOutcome outcome = m_client->CreateTable(request);
+  if (!outcome.IsSuccess()) {
+    if (outcome.GetError().GetExceptionName() != "ResourceInUseException") {
+      std::cerr << "Error creating table " << m_table_name << ": " << outcome.GetError().GetExceptionName()
+                << std::endl;
+      exit(1);
+    } else {
+      std::cerr << "Table " << m_table_name << " already exists" << std::endl;
+    }
+  }
 }
 
 REGISTER_STORAGE_IFACE("dynamodb", dynamodb);

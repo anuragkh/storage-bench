@@ -27,6 +27,9 @@ int main(int argc, char **argv) {
   if (m.find("write") != std::string::npos) {
     mode |= BENCHMARK_WRITE;
   }
+  if (m.find("create") != std::string::npos) {
+    mode |= BENCHMARK_CREATE;
+  }
   if (m.find("destroy") != std::string::npos) {
     mode |= BENCHMARK_DESTROY;
   }

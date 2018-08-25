@@ -12,7 +12,7 @@ class storage_interface {
  public:
   typedef boost::property_tree::ptree property_map;
 
-  virtual void init(const property_map &conf) = 0;
+  virtual void init(const property_map &conf, bool create) = 0;
   virtual void write(const std::string &key, const std::string &value) = 0;
   virtual std::string read(const std::string &key) = 0;
   virtual void destroy() = 0;

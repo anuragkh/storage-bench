@@ -192,8 +192,7 @@ def main():
     parser.add_argument('--bin-path', type=str, default='build', help='location of executable (local mode only)')
     parser.add_argument('--object-size', type=int, default=8, help='object size to benchmark for')
     parser.add_argument('--distribution', type=str, default='sequential', help='key distribution')
-    parser.add_argument('--bench-mode', type=str, default='read_write_destroy',
-                        help='benchmark mode (read/write/read_write/scale:{op}:{n}:{period}:{num_periods})')
+    parser.add_argument('--bench-mode', type=str, default='create_read_write_destroy', help='benchmark mode')
     args = parser.parse_args()
 
     if args.create:

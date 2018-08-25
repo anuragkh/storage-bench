@@ -15,7 +15,7 @@ class dynamodb: public storage_interface {
   dynamodb();
   ~dynamodb();
 
-  void init(const property_map &conf) override;
+  void init(const property_map &conf, bool create) override;
   void write(const std::string &key, const std::string &value) override;
   std::string read(const std::string &key) override;
   void destroy() override;
@@ -25,6 +25,9 @@ class dynamodb: public storage_interface {
   std::string wait_read() override;
 
  private:
+  void create_table(long long read_capacity, long long write_capacity);
+  void wait_for_table();
+
   Aws::DynamoDB::Model::PutItemRequest make_put_request(const std::string &key, const std::string &value) const;
   Aws::DynamoDB::Model::GetItemRequest make_get_request(const std::string &key) const;
   void parse_put_response(const Aws::DynamoDB::Model::PutItemOutcome& outcome) const;

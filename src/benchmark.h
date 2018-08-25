@@ -15,7 +15,8 @@
 
 #define BENCHMARK_READ    1
 #define BENCHMARK_WRITE   2
-#define BENCHMARK_DESTROY 4
+#define BENCHMARK_CREATE  4
+#define BENCHMARK_DESTROY 8
 
 class benchmark {
  public:
@@ -36,7 +37,7 @@ class benchmark {
     auto start_us = now_us();
 
     std::cerr << "Initializing storage interface..." << std::endl;
-    s_if->init(conf);
+    s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       std::ofstream lw(output_path + "_write_latency.txt");
@@ -382,7 +383,7 @@ class benchmark {
     auto start_us = now_us();
 
     std::cerr << "Initializing storage interface..." << std::endl;
-    s_if->init(conf);
+    s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       std::thread recv_thread([=]() {
