@@ -218,8 +218,9 @@ class benchmark {
         last_measure_time = cur_time;
       }
     }
-    uint64_t cur_time = now_us();
-    tw << cur_time << "\t" << ((double) writes * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
+    uint64_t w_end = now_us();
+    tw << w_end << "\t" << ((double) writes * 1000.0 * 1000.0) / (w_end - last_measure_time) << std::endl;
+    tw << ((double) i * 1000.0 * 1000.0) / (w_end - w_begin) << std::endl;
     tw.close();
     std::cerr << "Finished writes." << std::endl;
   }
@@ -258,9 +259,9 @@ class benchmark {
     }
 
     std::cerr << "Starting reads..." << std::endl;
-    auto w_begin = now_us();
+    auto r_begin = now_us();
     size_t i;
-    auto last_measure_time = w_begin;
+    auto last_measure_time = r_begin;
     size_t reads = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); i += n_async) {
       try {
@@ -286,8 +287,9 @@ class benchmark {
         last_measure_time = cur_time;
       }
     }
-    uint64_t cur_time = now_us();
-    tr << cur_time << "\t" << ((double) reads * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
+    uint64_t r_end = now_us();
+    tr << r_end << "\t" << ((double) reads * 1000.0 * 1000.0) / (r_end - last_measure_time) << std::endl;
+    tr << ((double) i * 1000.0 * 1000.0) / (r_end - r_begin) << std::endl;
     tr.close();
     std::cerr << "Finished reads." << std::endl;
   }
