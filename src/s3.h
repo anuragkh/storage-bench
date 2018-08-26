@@ -26,14 +26,15 @@ class s3 : public storage_interface {
   std::string wait_read() override;
 
  private:
-  void empty_bucket();
-  void wait_for_bucket_to_empty();
+  void empty_bucket(const Aws::String &bucket_name);
+  void wait_for_bucket_to_empty(const Aws::String &bucket_name);
+  void delete_bucket(const Aws::String &bucket_name);
   bool wait_for_bucket_to_propagate();
 
-  Aws::S3::Model::PutObjectRequest make_put_request(const std::string& key, const std::string &value) const;
-  Aws::S3::Model::GetObjectRequest make_get_request(const std::string& key) const;
-  std::string parse_get_response(Aws::S3::Model::GetObjectOutcome& outcome) const;
-  void parse_put_response(Aws::S3::Model::PutObjectOutcome& outcome) const;
+  Aws::S3::Model::PutObjectRequest make_put_request(const std::string &key, const std::string &value) const;
+  Aws::S3::Model::GetObjectRequest make_get_request(const std::string &key) const;
+  std::string parse_get_response(Aws::S3::Model::GetObjectOutcome &outcome) const;
+  void parse_put_response(Aws::S3::Model::PutObjectOutcome &outcome) const;
 
   queue<Aws::S3::Model::PutObjectOutcomeCallable> m_put_callables;
   queue<Aws::S3::Model::GetObjectOutcomeCallable> m_get_callables;
