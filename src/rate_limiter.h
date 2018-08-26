@@ -4,27 +4,21 @@
 #include <cstdint>
 #include <chrono>
 #include <mutex>
+#include "token_bucket.h"
+
+#ifndef BURST_SIZE
+#define BURST_SIZE 1000
+#endif
 
 class rate_limiter {
  public:
   rate_limiter();
-  rate_limiter(double rate);
+  explicit rate_limiter(uint64_t rate);
 
-  int64_t acquire();
-
-  void set_rate(double rate);
-  double get_rate() const;
- private:
-  void sync(uint64_t now);
-  std::chrono::microseconds claim_next(double permits);
+  bool acquire();
 
  private:
-  double m_interval;
-  double m_max_permits;
-  double m_stored_permits;
-
-  uint64_t m_next_free;
-  std::mutex m_mtx;
+  token_bucket m_bucket;
 };
 
 #endif //STORAGE_BENCH_RATE_LIMITER_H

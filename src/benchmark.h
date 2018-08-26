@@ -414,7 +414,7 @@ class benchmark {
     double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
     tr << cur_time << "\t" << send_rate << std::endl;
     tr.close();
-    std::cerr << "[RECV] Finished reads." << std::endl; 
+    std::cerr << "[RECV] Finished reads." << std::endl;
   }
 
   template<typename K>
