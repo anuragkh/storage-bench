@@ -155,6 +155,144 @@ class benchmark {
   }
 
   template<typename K>
+  static void async_writes(const std::shared_ptr<storage_interface> &s_if,
+                           const std::shared_ptr<K> key_gen,
+                           const std::string &output_path,
+                           size_t value_size,
+                           size_t num_ops,
+                           size_t n_async,
+                           bool warm_up,
+                           uint64_t start_us,
+                           uint64_t max_us) {
+    int err_count = 0;
+    size_t warm_up_ops = num_ops / 10;
+    std::string value(value_size, 'x');
+    std::ofstream tw(output_path + "_write.txt");
+    if (warm_up) {
+      std::cerr << "Warm-up writes..." << std::endl;
+      for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i += n_async) {
+        try {
+          for (size_t j = 0; j < n_async; ++j)
+            s_if->write_async(key_gen->next(), value);
+          for (size_t j = 0; j < n_async; ++j)
+            s_if->wait_write();
+        } catch (std::runtime_error &e) {
+          --i;
+          ++err_count;
+          if (err_count > ERROR_MAX) {
+            std::cerr << "Too many errors" << std::endl;
+            s_if->destroy();
+            std::cerr << "Destroyed storage interface." << std::endl;
+            exit(1);
+          }
+        }
+      }
+    }
+
+    std::cerr << "Starting writes..." << std::endl;
+    auto w_begin = now_us();
+    size_t i;
+    auto last_measure_time = w_begin;
+    size_t writes = 0;
+    for (i = 0; i < num_ops && time_bound(start_us, max_us); i += n_async) {
+      try {
+        for (size_t j = 0; j < n_async; ++j)
+          s_if->write_async(key_gen->next(), value);
+        for (size_t j = 0; j < n_async; ++j)
+          s_if->wait_write();
+        ++writes;
+      } catch (std::runtime_error &e) {
+        --i;
+        ++err_count;
+        if (err_count > ERROR_MAX) {
+          std::cerr << "Too many errors" << std::endl;
+          s_if->destroy();
+          std::cerr << "Destroyed storage interface." << std::endl;
+          exit(1);
+        }
+      }
+      uint64_t cur_time;
+      if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
+        tw << cur_time << "\t" << ((double) writes * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
+        writes = 0;
+        last_measure_time = cur_time;
+      }
+    }
+    uint64_t cur_time = now_us();
+    tw << cur_time << "\t" << ((double) writes * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
+    tw.close();
+    std::cerr << "Finished writes." << std::endl;
+  }
+
+  template<typename K>
+  static void async_reads(const std::shared_ptr<storage_interface> &s_if,
+                          const std::shared_ptr<K> key_gen,
+                          const std::string &output_path,
+                          size_t num_ops,
+                          size_t n_async,
+                          bool warm_up,
+                          uint64_t start_us,
+                          uint64_t max_us) {
+    int err_count = 0;
+    size_t warm_up_ops = num_ops / 10;
+    std::ofstream tr(output_path + "_read.txt");
+    if (warm_up) {
+      std::cerr << "Warm-up writes..." << std::endl;
+      for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i += n_async) {
+        try {
+          for (size_t j = 0; j < n_async; ++j)
+            s_if->read_async(key_gen->next());
+          for (size_t j = 0; j < n_async; ++j)
+            s_if->wait_read();
+        } catch (std::runtime_error &e) {
+          --i;
+          ++err_count;
+          if (err_count > ERROR_MAX) {
+            std::cerr << "Too many errors" << std::endl;
+            s_if->destroy();
+            std::cerr << "Destroyed storage interface." << std::endl;
+            exit(1);
+          }
+        }
+      }
+    }
+
+    std::cerr << "Starting writes..." << std::endl;
+    auto w_begin = now_us();
+    size_t i;
+    auto last_measure_time = w_begin;
+    size_t reads = 0;
+    for (i = 0; i < num_ops && time_bound(start_us, max_us); i += n_async) {
+      try {
+        for (size_t j = 0; j < n_async; ++j)
+          s_if->read_async(key_gen->next());
+        for (size_t j = 0; j < n_async; ++j)
+          s_if->wait_read();
+        ++reads;
+      } catch (std::runtime_error &e) {
+        --i;
+        ++err_count;
+        if (err_count > ERROR_MAX) {
+          std::cerr << "Too many errors" << std::endl;
+          s_if->destroy();
+          std::cerr << "Destroyed storage interface." << std::endl;
+          exit(1);
+        }
+      }
+      uint64_t cur_time;
+      if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
+        tr << cur_time << "\t" << ((double) reads * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
+        reads = 0;
+        last_measure_time = cur_time;
+      }
+    }
+    uint64_t cur_time = now_us();
+    tr << cur_time << "\t" << ((double) reads * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
+    tr.close();
+    std::cerr << "Finished writes." << std::endl;
+  }
+
+  template<typename K>
   static void send_writes(const std::shared_ptr<storage_interface> &s_if,
                           const std::shared_ptr<K> key_gen,
                           const std::shared_ptr<rate_limiter> &limiter,
@@ -420,16 +558,16 @@ class benchmark {
   }
 
   template<typename K>
-  static void run_async(const std::shared_ptr<storage_interface> &s_if,
-                        const storage_interface::property_map &conf,
-                        const std::shared_ptr<K> key_gen,
-                        const std::string &output_path,
-                        double rate,
-                        size_t value_size,
-                        size_t num_ops,
-                        bool warm_up,
-                        int32_t mode,
-                        uint64_t max_us) {
+  static void run_rate_limited(const std::shared_ptr<storage_interface> &s_if,
+                               const storage_interface::property_map &conf,
+                               const std::shared_ptr<K> key_gen,
+                               const std::string &output_path,
+                               double rate,
+                               size_t value_size,
+                               size_t num_ops,
+                               bool warm_up,
+                               int32_t mode,
+                               uint64_t max_us) {
 
     auto start_us = now_us();
 
@@ -468,6 +606,38 @@ class benchmark {
                             max_us);
       recv_thread.join();
     }
+
+    if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY) {
+      s_if->destroy();
+    }
+  }
+
+  template<typename K>
+  static void run_async(const std::shared_ptr<storage_interface> &s_if,
+                        const storage_interface::property_map &conf,
+                        const std::shared_ptr<K> key_gen,
+                        const std::string &output_path,
+                        size_t value_size,
+                        size_t num_ops,
+                        size_t n_async,
+                        bool warm_up,
+                        int32_t mode,
+                        uint64_t max_us) {
+    auto start_us = now_us();
+
+    std::cerr << "Initializing storage interface..." << std::endl;
+    s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
+
+    if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE)
+      benchmark::async_writes(s_if, key_gen, output_path, value_size, num_ops, n_async, warm_up, start_us, max_us);
+
+    key_gen->reset();
+
+    if ((mode & BENCHMARK_READ) == BENCHMARK_READ)
+      benchmark::async_reads(s_if, key_gen, output_path, num_ops, n_async, warm_up, start_us, max_us);
+
+    if ((mode & BENCHMARK_DESTROY) == BENCHMARK_DESTROY)
+      s_if->destroy();
   }
 
   static bool time_bound(uint64_t start_us, uint64_t max_us) {

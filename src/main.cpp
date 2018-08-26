@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
   size_t value_size = std::stoull(argv[4]);
   int32_t mode = 0;
   bool async = false;
-  double rate = 0.0;
+  size_t rate = 0;
   std::string m(argv[5]);
   if (m.find("read") != std::string::npos) {
     mode |= BENCHMARK_READ;
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     size_t rbeg = async_pos + 6;
     size_t rend = m.find('}', rbeg);
     size_t len = rend - rbeg;
-    rate = std::stod(m.substr(rbeg, len));
+    rate = static_cast<size_t>(std::stoll(m.substr(rbeg, len)));
     std::cerr << "Rate: " << rate << std::endl;
     async = true;
   }
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
     auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
     auto remaining = timeout - (benchmark::now_us() - begin);
     if (async) {
-      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, rate, value_size, n_ops, warm_up, mode, remaining);
+      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, rate, warm_up, mode, remaining);
     } else {
       benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
     }
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
     auto key_gen = std::make_shared<sequential_key_generator>();
     auto remaining = timeout - (benchmark::now_us() - begin);
     if (async) {
-      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, rate, value_size, n_ops, warm_up, mode, remaining);
+      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, rate, warm_up, mode, remaining);
     } else {
       benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
     }
