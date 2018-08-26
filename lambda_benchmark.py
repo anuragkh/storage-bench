@@ -180,7 +180,19 @@ def log_process(host, port, num_loggers):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Run storage benchmark on AWS Lambda.')
+    m_help = ('\n\nmode should contain one or more of the following components,\n'
+              'separated by any non-whitespace delimiter:\n'
+              '\tcreate   - create the table/bucket/file\n'
+              '\tread     - execute read benchmark\n'
+              '\twrite    - execute write benchmark\n'
+              '\tdestroy  - destroy the table/bucket/file\n'
+              '\tasync{n} - send asynchronous read/write requests at rate n\n\n'
+              'Examples:\n'
+              '\tcreate_write_destroy_async{10} - Create table/bucket/file,\n'
+              '\texecute read benchmark sending async requests at 10 op/s,\n'
+              '\tand finally destroy the table/bucket/file.')
+    parser = argparse.ArgumentParser(description='Run storage benchmark on AWS Lambda.',
+                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--create', action='store_true', help='create AWS Lambda function')
     parser.add_argument('--invoke', action='store_true', help='invoke AWS Lambda function')
     parser.add_argument('--invoke-local', action='store_true', help='invoke AWS Lambda function locally')
@@ -190,9 +202,9 @@ def main():
     parser.add_argument('--port', type=int, default=8888, help='port that server listens on')
     parser.add_argument('--num-ops', type=int, default=-1, help='number of operations')
     parser.add_argument('--bin-path', type=str, default='build', help='location of executable (local mode only)')
-    parser.add_argument('--object-size', type=int, default=8, help='object size to benchmark for')
-    parser.add_argument('--distribution', type=str, default='sequential', help='key distribution')
-    parser.add_argument('--bench-mode', type=str, default='create_read_write_destroy', help='benchmark mode')
+    parser.add_argument('--obj-size', type=int, default=8, help='object size to benchmark for')
+    parser.add_argument('--dist', type=str, default='sequential', help='key distribution')
+    parser.add_argument('--mode', type=str, default='create_read_write_destroy', help='benchmark mode' + m_help)
     args = parser.parse_args()
 
     if args.create:
