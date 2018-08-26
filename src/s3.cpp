@@ -131,14 +131,19 @@ void s3::empty_bucket(const Aws::String &bucket_name) {
     if (!list_outcome.IsSuccess() || list_outcome.GetResult().GetContents().empty())
       return;
 
+    std::vector<DeleteObjectOutcomeCallable> futures;
     for (const auto &object : list_outcome.GetResult().GetContents()) {
       DeleteObjectRequest delete_request;
       delete_request.SetBucket(bucket_name);
       delete_request.SetKey(object.GetKey());
-      m_client->DeleteObject(delete_request);
+      futures.push_back(m_client->DeleteObjectCallable(delete_request));
+    }
+    for (auto& fut: futures) {
+      fut.wait();
     }
   }
 }
+
 void s3::wait_for_bucket_to_empty(const Aws::String &bucket_name) {
   ListObjectsRequest list_request;
   list_request.SetBucket(bucket_name);
@@ -158,6 +163,7 @@ void s3::wait_for_bucket_to_empty(const Aws::String &bucket_name) {
     }
   }
 }
+
 void s3::delete_bucket(const Aws::String &bucket_name) {
   HeadBucketRequest head_request;
   head_request.SetBucket(bucket_name);
