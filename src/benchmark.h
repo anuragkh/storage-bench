@@ -200,7 +200,7 @@ class benchmark {
           s_if->write_async(key_gen->next(), value);
         for (size_t j = 0; j < n_async; ++j)
           s_if->wait_write();
-        ++writes;
+        writes += n_async;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -237,7 +237,7 @@ class benchmark {
     size_t warm_up_ops = num_ops / 10;
     std::ofstream tr(output_path + "_read.txt");
     if (warm_up) {
-      std::cerr << "Warm-up writes..." << std::endl;
+      std::cerr << "Warm-up reads..." << std::endl;
       for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i += n_async) {
         try {
           for (size_t j = 0; j < n_async; ++j)
@@ -257,7 +257,7 @@ class benchmark {
       }
     }
 
-    std::cerr << "Starting writes..." << std::endl;
+    std::cerr << "Starting reads..." << std::endl;
     auto w_begin = now_us();
     size_t i;
     auto last_measure_time = w_begin;
@@ -268,7 +268,7 @@ class benchmark {
           s_if->read_async(key_gen->next());
         for (size_t j = 0; j < n_async; ++j)
           s_if->wait_read();
-        ++reads;
+        reads += n_async;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -289,7 +289,7 @@ class benchmark {
     uint64_t cur_time = now_us();
     tr << cur_time << "\t" << ((double) reads * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
     tr.close();
-    std::cerr << "Finished writes." << std::endl;
+    std::cerr << "Finished reads." << std::endl;
   }
 
   template<typename K>
