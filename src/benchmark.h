@@ -13,6 +13,10 @@
 #define ERROR_MAX 1000
 #endif
 
+#ifndef MEASURE_INTERVAL
+#define MEASURE_INTERVAL 1000000
+#endif
+
 #define BENCHMARK_READ    1
 #define BENCHMARK_WRITE   2
 #define BENCHMARK_CREATE  4
@@ -186,9 +190,12 @@ class benchmark {
     std::cerr << "[SEND] Starting writes..." << std::endl;
     auto w_begin = now_us();
     size_t i;
+    auto last_measure_time = w_begin;
+    size_t interval_sent = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
         s_if->write_async(key_gen->next(), value);
+        ++interval_sent;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -199,13 +206,21 @@ class benchmark {
           exit(1);
         }
       }
+      uint64_t cur_time;
+      if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
+        double diff = cur_time - last_measure_time;
+        double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+        tw << cur_time << "\t" << send_rate << std::endl;
+        interval_sent = 0;
+        last_measure_time = cur_time;
+      }
     }
-    auto w_end = now_us();
-    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
-    std::cerr << "Finished writes." << std::endl;
-
-    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
+    uint64_t cur_time = now_us();
+    double diff = cur_time - last_measure_time;
+    double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+    tw << cur_time << "\t" << send_rate << std::endl;
     tw.close();
+    std::cerr << "[SEND] Finished writes." << std::endl;
   }
 
   static void recv_writes(const std::shared_ptr<storage_interface> &s_if,
@@ -238,9 +253,12 @@ class benchmark {
     std::cerr << "[RECV] Starting writes..." << std::endl;
     auto w_begin = now_us();
     size_t i;
+    auto last_measure_time = w_begin;
+    size_t interval_sent = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
         s_if->wait_write();
+        ++interval_sent;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -251,13 +269,22 @@ class benchmark {
           exit(1);
         }
       }
+      uint64_t cur_time;
+      if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
+        double diff = cur_time - last_measure_time;
+        double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+        tw << cur_time << "\t" << send_rate << std::endl;
+        interval_sent = 0;
+        last_measure_time = cur_time;
+      }
     }
-    auto w_end = now_us();
-    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
-    std::cerr << "Finished writes." << std::endl;
-
-    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
+    uint64_t cur_time = now_us();
+    double diff = cur_time - last_measure_time;
+    double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+    tw << cur_time << "\t" << send_rate << std::endl;
     tw.close();
+
+    std::cerr << "[RECV] Finished writes." << std::endl;
   }
 
   template<typename K>
@@ -271,7 +298,7 @@ class benchmark {
                          uint64_t max_us) {
     int err_count = 0;
     size_t warm_up_ops = num_ops / 10;
-    std::ofstream tw(output_path + "_read_send.txt");
+    std::ofstream tr(output_path + "_read_send.txt");
     if (warm_up) {
       std::cerr << "[SEND] Warm-up reads..." << std::endl;
       for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i++) {
@@ -292,11 +319,14 @@ class benchmark {
     }
 
     std::cerr << "[SEND] Starting reads..." << std::endl;
-    auto w_begin = now_us();
+    auto r_begin = now_us();
     size_t i;
+    auto last_measure_time = r_begin;
+    size_t interval_sent = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
         s_if->read_async(key_gen->next());
+        ++interval_sent;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -307,13 +337,21 @@ class benchmark {
           exit(1);
         }
       }
+      uint64_t cur_time;
+      if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
+        double diff = cur_time - last_measure_time;
+        double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+        tr << cur_time << "\t" << send_rate << std::endl;
+        interval_sent = 0;
+        last_measure_time = cur_time;
+      }
     }
-    auto w_end = now_us();
-    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
-    std::cerr << "Finished reads." << std::endl;
-
-    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
-    tw.close();
+    uint64_t cur_time = now_us();
+    double diff = cur_time - last_measure_time;
+    double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+    tr << cur_time << "\t" << send_rate << std::endl;
+    tr.close();
+    std::cerr << "[SEND] Finished reads." << std::endl;
   }
 
   static void recv_reads(const std::shared_ptr<storage_interface> &s_if,
@@ -324,7 +362,7 @@ class benchmark {
                          uint64_t max_us) {
     int err_count = 0;
     size_t warm_up_ops = num_ops / 10;
-    std::ofstream tw(output_path + "_read_recv.txt");
+    std::ofstream tr(output_path + "_read_recv.txt");
     if (warm_up) {
       std::cerr << "[RECV] Warm-up reads..." << std::endl;
       for (size_t i = 0; i < warm_up_ops && time_bound(start_us, max_us); i++) {
@@ -344,11 +382,14 @@ class benchmark {
     }
 
     std::cerr << "[RECV] Starting reads..." << std::endl;
-    auto w_begin = now_us();
+    auto r_begin = now_us();
     size_t i;
+    auto last_measure_time = r_begin;
+    size_t interval_sent = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
         s_if->wait_read();
+        ++interval_sent;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -359,13 +400,21 @@ class benchmark {
           exit(1);
         }
       }
+      uint64_t cur_time;
+      if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
+        double diff = cur_time - last_measure_time;
+        double recv_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+        tr << cur_time << "\t" << recv_rate << std::endl;
+        interval_sent = 0;
+        last_measure_time = cur_time;
+      }
     }
-    auto w_end = now_us();
-    auto w_elapsed_s = static_cast<double>(w_end - w_begin) / 1000000.0;
-    std::cerr << "Finished reads." << std::endl;
-
-    tw << (static_cast<double>(i) / w_elapsed_s) << std::endl;
-    tw.close();
+    uint64_t cur_time = now_us();
+    double diff = cur_time - last_measure_time;
+    double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+    tr << cur_time << "\t" << send_rate << std::endl;
+    tr.close();
+    std::cerr << "[RECV] Finished reads." << std::endl; 
   }
 
   template<typename K>
