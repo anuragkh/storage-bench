@@ -83,9 +83,9 @@ def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
         host=args.host,
         port=args.port,
         bin_path=args.bin_path,
-        object_size=args.object_size,
+        object_size=args.obj_size,
         num_ops=args.num_ops,
-        dist=args.distribution,
+        dist=args.dist,
         warm_up=warm_up,
         mode=mode,
         id=lambda_id
@@ -98,14 +98,14 @@ def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
         return invoke_locally(e)
 
 
-def invoke_n(args, bench_mode, n, base=0):
-    return [invoke(args, bench_mode, 0, str(base + i)) for i in range(n)]
+def invoke_n(args, mode, n, base=0):
+    return [invoke(args, mode, 0, str(base + i)) for i in range(n)]
 
 
-def invoke_n_periodically(args, bench_mode, n, period, num_periods):
+def invoke_n_periodically(args, mode, n, period, num_periods):
     p = []
     for i in range(num_periods):
-        p.extend(invoke_n(args, bench_mode, n, i * n))
+        p.extend(invoke_n(args, mode, n, i * n))
         time.sleep(period)
     return p
 
@@ -220,15 +220,15 @@ def main():
 
     if args.invoke or args.invoke_local:
         if args.num_ops == -1:
-            args.num_ops = num_ops(args.system, args.object_size)
-        if args.bench_mode.startswith('scale'):
-            _, mode, n, period, num_periods = args.bench_mode.split(':')
+            args.num_ops = num_ops(args.system, args.obj_size)
+        if args.mode.startswith('scale'):
+            _, mode, n, period, num_periods = args.mode.split(':')
             lp = log_process(args.host, args.port, int(n) * int(num_periods))
             processes = invoke_n_periodically(args, mode, int(n), int(period), int(num_periods))
             processes.append(lp)
         else:
             lp = log_process(args.host, args.port, 1)
-            processes = [invoke(args, args.bench_mode, 1), lp]
+            processes = [invoke(args, args.mode, 1), lp]
 
         for p in processes:
             if p is not None:
