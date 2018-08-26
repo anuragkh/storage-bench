@@ -194,6 +194,7 @@ class benchmark {
     size_t interval_sent = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
+        limiter->acquire();
         s_if->write_async(key_gen->next(), value);
         ++interval_sent;
       } catch (std::runtime_error &e) {
@@ -254,11 +255,11 @@ class benchmark {
     auto w_begin = now_us();
     size_t i;
     auto last_measure_time = w_begin;
-    size_t interval_sent = 0;
+    size_t interval_recv = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
         s_if->wait_write();
-        ++interval_sent;
+        ++interval_recv;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -272,15 +273,15 @@ class benchmark {
       uint64_t cur_time;
       if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
         double diff = cur_time - last_measure_time;
-        double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+        double send_rate = ((double) interval_recv * 1000.0 * 1000.0) / diff;
         tw << cur_time << "\t" << send_rate << std::endl;
-        interval_sent = 0;
+        interval_recv = 0;
         last_measure_time = cur_time;
       }
     }
     uint64_t cur_time = now_us();
     double diff = cur_time - last_measure_time;
-    double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+    double send_rate = ((double) interval_recv * 1000.0 * 1000.0) / diff;
     tw << cur_time << "\t" << send_rate << std::endl;
     tw.close();
 
@@ -325,6 +326,7 @@ class benchmark {
     size_t interval_sent = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
+        limiter->acquire();
         s_if->read_async(key_gen->next());
         ++interval_sent;
       } catch (std::runtime_error &e) {
@@ -385,11 +387,11 @@ class benchmark {
     auto r_begin = now_us();
     size_t i;
     auto last_measure_time = r_begin;
-    size_t interval_sent = 0;
+    size_t interval_recv = 0;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); ++i) {
       try {
         s_if->wait_read();
-        ++interval_sent;
+        ++interval_recv;
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;
@@ -403,15 +405,15 @@ class benchmark {
       uint64_t cur_time;
       if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
         double diff = cur_time - last_measure_time;
-        double recv_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+        double recv_rate = ((double) interval_recv * 1000.0 * 1000.0) / diff;
         tr << cur_time << "\t" << recv_rate << std::endl;
-        interval_sent = 0;
+        interval_recv = 0;
         last_measure_time = cur_time;
       }
     }
     uint64_t cur_time = now_us();
     double diff = cur_time - last_measure_time;
-    double send_rate = ((double) interval_sent * 1000.0 * 1000.0) / diff;
+    double send_rate = ((double) interval_recv * 1000.0 * 1000.0) / diff;
     tr << cur_time << "\t" << send_rate << std::endl;
     tr.close();
     std::cerr << "[RECV] Finished reads." << std::endl;

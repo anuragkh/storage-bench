@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
     size_t rend = m.find('}', rbeg);
     size_t len = rend - rbeg;
     rate = std::stod(m.substr(rbeg, len));
+    std::cerr << "Rate: " << rate << std::endl;
     async = true;
   }
   size_t n_ops = std::stoull(argv[6]);
