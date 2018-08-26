@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
+#include <aws/core/Aws.h>
 #include "storage_interface.h"
 #include "benchmark.h"
 #include "key_generator.h"
@@ -13,6 +14,11 @@ int main(int argc, char **argv) {
               << std::endl;
     return -1;
   }
+
+  Aws::SDKOptions m_options;
+  m_options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
+  Aws::InitAPI(m_options);
+
   std::string system = argv[1];
   std::string conf_file = argv[2];
   std::string result_prefix = argv[3];
@@ -78,6 +84,8 @@ int main(int argc, char **argv) {
   } else {
     std::cerr << "Unknown key distribution: " << argv[8] << std::endl;
   }
+
+  Aws::ShutdownAPI(m_options);
 
   return 0;
 }

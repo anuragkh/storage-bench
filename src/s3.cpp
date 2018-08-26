@@ -13,14 +13,9 @@ using namespace Aws::Client;
 using namespace Aws::S3;
 using namespace Aws::S3::Model;
 
-s3::s3() {
-  m_options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
-  Aws::InitAPI(m_options);
-}
+s3::s3() = default;
 
-s3::~s3() {
-  Aws::ShutdownAPI(m_options);
-}
+s3::~s3() = default;
 
 void s3::init(const property_map &conf, bool create) {
   // Create a client
@@ -85,13 +80,15 @@ void s3::empty_bucket() {
 
   ListObjectsOutcome outcome1 = m_client->ListObjects(request1);
 
-  if (!outcome1.IsSuccess())
-    return;
+  if (!outcome1.IsSuccess()) {
+    std::cerr << "Failed to list objects on bucket " << m_bucket_name << ": " << outcome1.GetError().GetMessage()
+              << std::endl;
+    std::exit(1);
+  }
 
   for (const auto &object : outcome1.GetResult().GetContents()) {
     DeleteObjectRequest request2;
-    request2.SetBucket(m_bucket_name);
-    request2.SetKey(object.GetKey());
+    request2.WithBucket(m_bucket_name).WithKey(object.GetKey());
     m_client->DeleteObject(request2);
   }
 

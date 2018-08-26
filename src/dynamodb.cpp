@@ -18,14 +18,9 @@ using namespace Aws::Client;
 using namespace Aws::DynamoDB;
 using namespace Aws::DynamoDB::Model;
 
-dynamodb::dynamodb() {
-  m_options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
-  Aws::InitAPI(m_options);
-}
+dynamodb::dynamodb() = default;
 
-dynamodb::~dynamodb() {
-  Aws::ShutdownAPI(m_options);
-}
+dynamodb::~dynamodb() = default;
 
 void dynamodb::init(const property_map &conf, bool create) {
   // Create a client

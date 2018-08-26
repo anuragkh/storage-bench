@@ -39,7 +39,6 @@ class s3 : public storage_interface {
   queue<Aws::S3::Model::GetObjectOutcomeCallable> m_get_callables;
   Aws::String m_bucket_name;
   std::shared_ptr<Aws::S3::S3Client> m_client;
-  Aws::SDKOptions m_options;
 };
 
 #endif //STORAGE_BENCH_S_3_H
