@@ -37,7 +37,6 @@ class dynamodb: public storage_interface {
   queue<Aws::DynamoDB::Model::GetItemOutcomeCallable> m_get_callables;
   Aws::String m_table_name;
   std::shared_ptr<Aws::DynamoDB::DynamoDBClient> m_client;
-  Aws::SDKOptions m_options;
 };
 
 #endif //STORAGE_BENCH_DYNAMODB_H
