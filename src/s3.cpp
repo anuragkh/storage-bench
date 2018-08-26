@@ -62,6 +62,7 @@ void s3::destroy() {
 
   if (outcome1.IsSuccess()) {
     empty_bucket();
+    wait_for_bucket_to_empty();
 
     DeleteBucketRequest request2;
     request2.SetBucket(m_bucket_name);
@@ -81,9 +82,7 @@ void s3::empty_bucket() {
   ListObjectsOutcome outcome1 = m_client->ListObjects(request1);
 
   if (!outcome1.IsSuccess()) {
-    std::cerr << "Failed to list objects on bucket " << m_bucket_name << ": " << outcome1.GetError().GetMessage()
-              << std::endl;
-    std::exit(1);
+    return;
   }
 
   for (const auto &object : outcome1.GetResult().GetContents()) {
@@ -91,8 +90,6 @@ void s3::empty_bucket() {
     request2.WithBucket(m_bucket_name).WithKey(object.GetKey());
     m_client->DeleteObject(request2);
   }
-
-  wait_for_bucket_to_empty();
 }
 
 void s3::wait_for_bucket_to_empty() {
