@@ -24,7 +24,21 @@ class redis : public storage_interface {
   std::string  parse_read_response(const cpp_redis::reply &r);
   void parse_write_response(const cpp_redis::reply &r);
 
-  std::shared_ptr<cpp_redis::client> m_client;
+  static int32_t hash(const std::string& key) {
+    return crc16(key.c_str(), key.length());
+  }
+
+  static uint16_t crc16(const char *buf, size_t len) {
+    size_t counter;
+    uint16_t crc = 0;
+    for (counter = 0; counter < len; counter++)
+      crc = (crc << 8) ^ crc16tab[((crc >> 8) ^ *buf++) & 0x00FF];
+    return crc;
+  }
+
+  static const uint16_t crc16tab[256];
+
+  std::vector<std::shared_ptr<cpp_redis::client>> m_client;
 
   queue<std::future<cpp_redis::reply>> m_get_futures;
   queue<std::future<cpp_redis::reply>> m_put_futures;
