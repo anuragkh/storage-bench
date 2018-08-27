@@ -76,12 +76,12 @@ def _init_bin(bin_path, lambda_id):
     return new_file
 
 
-def _copy_results(logger, prefix, result):
+def _copy_results(logger, system, result):
     bucket = boto3.resource('s3').Bucket('bench-results')
     if os.path.isfile(result):
         logger.info('Copying results @ {} to S3...'.format(result))
         with open(result, 'rb') as data:
-            bucket.put_object(Key=prefix + "_" + os.path.basename(result), Body=data)
+            bucket.put_object(Key=os.path.join(system, os.path.basename(result)), Body=data)
 
 
 def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
@@ -141,6 +141,6 @@ def benchmark_handler(event, context):
         logger.error(e)
     finally:
         for result_suffix in result_suffixes:
-            _copy_results(logger, os.path.join(system, lid), prefix + '_' + str(object_size) + result_suffix)
+            _copy_results(logger, system, prefix + '_' + str(object_size) + result_suffix)
 
     logger.close()
