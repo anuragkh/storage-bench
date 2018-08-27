@@ -57,6 +57,7 @@ class benchmark {
             ++err_count;
             if (err_count > ERROR_MAX) {
               std::cerr << "Too many errors" << std::endl;
+              std::cerr << "Last error: " << e.what() << std::endl;
               s_if->destroy();
               std::cerr << "Destroyed storage interface." << std::endl;
               exit(1);
@@ -77,6 +78,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "Destroyed storage interface." << std::endl;
             exit(1);
@@ -111,6 +113,7 @@ class benchmark {
             ++err_count;
             if (err_count > ERROR_MAX) {
               std::cerr << "Too many errors" << std::endl;
+              std::cerr << "Last error: " << e.what() << std::endl;
               s_if->destroy();
               std::cerr << "Destroyed storage interface." << std::endl;
               exit(1);
@@ -131,6 +134,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "Destroyed storage interface." << std::endl;
             exit(1);
@@ -181,6 +185,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "Destroyed storage interface." << std::endl;
             exit(1);
@@ -207,6 +212,7 @@ class benchmark {
         ++err_count;
         if (err_count > ERROR_MAX) {
           std::cerr << "Too many errors" << std::endl;
+          std::cerr << "Last error: " << e.what() << std::endl;
           s_if->destroy();
           std::cerr << "Destroyed storage interface." << std::endl;
           exit(1);
@@ -250,6 +256,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "Destroyed storage interface." << std::endl;
             exit(1);
@@ -276,6 +283,7 @@ class benchmark {
         ++err_count;
         if (err_count > ERROR_MAX) {
           std::cerr << "Too many errors" << std::endl;
+          std::cerr << "Last error: " << e.what() << std::endl;
           s_if->destroy();
           std::cerr << "Destroyed storage interface." << std::endl;
           exit(1);
@@ -318,6 +326,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "[SEND] Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "[SEND] Destroyed storage interface." << std::endl;
             exit(1);
@@ -341,6 +350,7 @@ class benchmark {
         ++err_count;
         if (err_count > ERROR_MAX) {
           std::cerr << "[SEND] Too many errors" << std::endl;
+          std::cerr << "Last error: " << e.what() << std::endl;
           s_if->destroy();
           std::cerr << "[SEND] Destroyed storage interface." << std::endl;
           exit(1);
@@ -382,6 +392,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "[RECV] Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "[RECV] Destroyed storage interface." << std::endl;
             exit(1);
@@ -404,6 +415,7 @@ class benchmark {
         ++err_count;
         if (err_count > ERROR_MAX) {
           std::cerr << "[RECV] Too many errors" << std::endl;
+          std::cerr << "Last error: " << e.what() << std::endl;
           s_if->destroy();
           std::cerr << "[RECV] Destroyed storage interface." << std::endl;
           exit(1);
@@ -450,6 +462,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "[SEND] Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "[SEND] Destroyed storage interface." << std::endl;
             exit(1);
@@ -473,6 +486,7 @@ class benchmark {
         ++err_count;
         if (err_count > ERROR_MAX) {
           std::cerr << "[SEND] Too many errors" << std::endl;
+          std::cerr << "Last error: " << e.what() << std::endl;
           s_if->destroy();
           std::cerr << "[SEND] Destroyed storage interface." << std::endl;
           exit(1);
@@ -514,6 +528,7 @@ class benchmark {
           ++err_count;
           if (err_count > ERROR_MAX) {
             std::cerr << "[RECV] Too many errors" << std::endl;
+            std::cerr << "Last error: " << e.what() << std::endl;
             s_if->destroy();
             std::cerr << "[RECV] Destroyed storage interface." << std::endl;
             exit(1);
@@ -536,6 +551,7 @@ class benchmark {
         ++err_count;
         if (err_count > ERROR_MAX) {
           std::cerr << "[RECV] Too many errors" << std::endl;
+          std::cerr << "Last error: " << e.what() << std::endl;
           s_if->destroy();
           std::cerr << "[RECV] Destroyed storage interface." << std::endl;
           exit(1);
