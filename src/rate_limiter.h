@@ -8,7 +8,7 @@
 class rate_limiter {
  public:
   rate_limiter();
-  rate_limiter(double rate);
+  explicit rate_limiter(double rate);
 
   int64_t acquire();
 

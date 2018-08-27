@@ -11,7 +11,6 @@ rate_limiter::rate_limiter(double rate) : m_interval(0), m_max_permits(0), m_sto
 int64_t rate_limiter::acquire() {
   auto wait_time = claim_next(1);
   std::this_thread::sleep_for(wait_time);
-
   return static_cast<int64_t>(wait_time.count() / 1000.0);
 }
 

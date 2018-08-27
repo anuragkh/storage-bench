@@ -194,6 +194,7 @@ class benchmark {
     size_t i;
     auto last_measure_time = w_begin;
     size_t writes = 0;
+    tw << w_begin << "\t" << writes << std::endl;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); i += n_async) {
       try {
         for (size_t j = 0; j < n_async; ++j)
@@ -213,14 +214,13 @@ class benchmark {
       }
       uint64_t cur_time;
       if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
-        tw << cur_time << "\t" << ((double) writes * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
+        tw << cur_time << "\t" << writes << std::endl;
         writes = 0;
         last_measure_time = cur_time;
       }
     }
     uint64_t w_end = now_us();
-    tw << w_end << "\t" << ((double) writes * 1000.0 * 1000.0) / (w_end - last_measure_time) << std::endl;
-    tw << ((double) i * 1000.0 * 1000.0) / (w_end - w_begin) << std::endl;
+    tw << w_end << "\t" << writes << std::endl;
     tw.close();
     std::cerr << "Finished writes." << std::endl;
   }
@@ -263,6 +263,7 @@ class benchmark {
     size_t i;
     auto last_measure_time = r_begin;
     size_t reads = 0;
+    tr << r_begin << "\t" << reads << std::endl;
     for (i = 0; i < num_ops && time_bound(start_us, max_us); i += n_async) {
       try {
         for (size_t j = 0; j < n_async; ++j)
@@ -282,14 +283,12 @@ class benchmark {
       }
       uint64_t cur_time;
       if ((cur_time = now_us()) - last_measure_time >= MEASURE_INTERVAL) {
-        tr << cur_time << "\t" << ((double) reads * 1000.0 * 1000.0) / (cur_time - last_measure_time) << std::endl;
-        reads = 0;
+        tr << cur_time << "\t" << reads << std::endl;
         last_measure_time = cur_time;
       }
     }
     uint64_t r_end = now_us();
-    tr << r_end << "\t" << ((double) reads * 1000.0 * 1000.0) / (r_end - last_measure_time) << std::endl;
-    tr << ((double) i * 1000.0 * 1000.0) / (r_end - r_begin) << std::endl;
+    tr << r_end << "\t" << reads << std::endl;
     tr.close();
     std::cerr << "Finished reads." << std::endl;
   }
