@@ -60,7 +60,7 @@ class Logger(object):
         data = self.f.recv(4)
         msg = bytes_to_str(data.rstrip().lstrip())
         if msg is not 'RUN':
-            raise RuntimeError('Invalid response: {}'.format(data))
+            raise RuntimeError('Invalid response: [{}]'.format(msg))
 
     def close(self):
         self.f.send(b('CLOSE'))
