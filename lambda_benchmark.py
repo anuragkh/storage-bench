@@ -175,7 +175,7 @@ def listen_connection(s, num_connections, trigger_count=1):
                         for sock in ready:
                             print('Function @ {} {} ==RUN=='.format(sock.getpeername(), datetime.datetime.now()))
                             sock.send(b('RUN'))
-                        ready.clear()
+                        ready = []
                 else:
                     print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), msg))
 
