@@ -150,6 +150,7 @@ def listen_connection(s, num_connections, trigger_count=1):
     inputs = [s]
     outputs = []
     ready = []
+    connected = set()
     n_closed = 0
     while inputs:
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
@@ -170,12 +171,21 @@ def listen_connection(s, num_connections, trigger_count=1):
                         inputs.remove(s)
                         s.close()
                 elif 'READY' in msg:
-                    ready.append(r)
-                    if len(ready) % trigger_count == 0:
-                        for sock in ready:
-                            print('Function @ {} {} ==RUN=='.format(sock.getpeername(), datetime.datetime.now()))
-                            sock.send(b('RUN'))
-                        ready = []
+                    lamda_id = msg.split(':')[1]
+                    if lamda_id not in connected:
+                        connected.add(lamda_id)
+                        ready.append(r)
+                        if len(ready) % trigger_count == 0:
+                            for sock in ready:
+                                print('Function @ {} {} ==RUN=='.format(sock.getpeername(), datetime.datetime.now()))
+                                sock.send(b('RUN'))
+                            ready = []
+                    else:
+                        print('Function @ {} {} ==ABORT=='.format(r.getpeername(), datetime.datetime.now()))
+                        r.send(b('ABORT'))
+                        inputs.remove(r)
+                        r.close()
+
                 else:
                     print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), msg))
 

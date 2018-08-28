@@ -55,12 +55,12 @@ class Logger(object):
     def _log(self, msg_type, msg):
         self.f.send(b('{} {}'.format(msg_type, msg).rstrip()))
 
-    def signal(self):
-        self.f.send(b('READY'))
+    def signal(self, lambda_id):
+        self.f.send(b('READY:' + str(lambda_id)))
         data = self.f.recv(4)
         msg = bytes_to_str(data.rstrip().lstrip())
         if msg != 'RUN':
-            raise RuntimeError('Invalid response: [{}]'.format(msg))
+            sys.exit(0)
 
     def close(self):
         self.f.send(b('CLOSE'))
