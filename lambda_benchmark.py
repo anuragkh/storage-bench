@@ -173,8 +173,9 @@ def listen_connection(s, num_connections, trigger_count=1):
                 elif 'READY' in msg:
                     print('Received msg: {}'.format(msg))
                     i = msg.split('READY:')[1]
+                    print('... lambda_id={} ready ...')
                     if i not in connected:
-                        print('Queuing lambda_id={}')
+                        print('... Queuing lambda_id={} ...')
                         connected.add(i)
                         ready.append(r)
                         if len(ready) % trigger_count == 0:
@@ -183,8 +184,7 @@ def listen_connection(s, num_connections, trigger_count=1):
                                 sock.send(b('RUN'))
                             ready = []
                     else:
-                        print(
-                            'Function @ {} {} ABORT(lambda_id={})'.format(r.getpeername(), datetime.datetime.now(), i))
+                        print('... Aborting lambda_id={} ...'.format(i))
                         r.send(b('ABORT'))
                         inputs.remove(r)
                         r.close()
