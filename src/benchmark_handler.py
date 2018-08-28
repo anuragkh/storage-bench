@@ -94,7 +94,7 @@ def _copy_results(logger, system, result):
 def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
     executable = _init_bin(bin_path, lambda_id)
     cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
-    logger.signal()
+    logger.signal(lambda_id)
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     try:
         subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
