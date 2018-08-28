@@ -91,10 +91,10 @@ def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
         id=lambda_id
     )
     if args.invoke:
-        print('Invoking function...')
+        print('Invoking function with lambda_id={}'.format(lambda_id))
         return invoke_lambda(e)
     elif args.invoke_local:
-        print('Invoking function locally...')
+        print('Invoking function locally with lambda_id={}'.format(lambda_id))
         return invoke_locally(e)
 
 
@@ -171,17 +171,19 @@ def listen_connection(s, num_connections, trigger_count=1):
                         inputs.remove(s)
                         s.close()
                 elif 'READY' in msg:
-                    lamda_id = msg.split(':')[1]
-                    if lamda_id not in connected:
-                        connected.add(lamda_id)
+                    i = msg.split(':')[1]
+                    if i not in connected:
+                        print('Queuing lambda_id={}')
+                        connected.add(i)
                         ready.append(r)
                         if len(ready) % trigger_count == 0:
                             for sock in ready:
-                                print('Function @ {} {} ==RUN=='.format(sock.getpeername(), datetime.datetime.now()))
+                                print('Function @ {} {} RUN'.format(sock.getpeername(), datetime.datetime.now()))
                                 sock.send(b('RUN'))
                             ready = []
                     else:
-                        print('Function @ {} {} ==ABORT=='.format(r.getpeername(), datetime.datetime.now()))
+                        print(
+                            'Function @ {} {} ABORT(lambda_id={})'.format(r.getpeername(), datetime.datetime.now(), i))
                         r.send(b('ABORT'))
                         inputs.remove(r)
                         r.close()
