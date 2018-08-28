@@ -60,10 +60,10 @@ def create_function(name):
     print('Created function: {}'.format(resp))
 
 
-def parse_ini(system, conf_file):
+def parse_ini(section, conf_file):
     config = configparser.ConfigParser()
     config.read(conf_file)
-    return dict(config.items(system))
+    return dict(config.items(section))
 
 
 def invoke_lambda(e):
@@ -80,6 +80,7 @@ def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
     e = dict(
         system=args.system,
         conf=parse_ini(args.system, args.conf),
+        bench_conf=parse_ini("benchmark", args.conf),
         host=args.host,
         port=args.port,
         bin_path=args.bin_path,

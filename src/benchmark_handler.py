@@ -102,11 +102,14 @@ def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up
         logger.warn('Process did not terminate cleanly (Exit code: {})'.format(e.returncode))
 
 
-def _create_ini(logger, system, conf, out):
+def _create_ini(logger, system, sys_conf, bench_conf, out):
     config = configparser.ConfigParser()
     config.add_section(system)
-    for key in conf.keys():
-        config.set(system, key, conf[key])
+    for key in sys_conf.keys():
+        config.set(system, key, sys_conf[key])
+    config.add_section('benchmark')
+    for key in bench_conf.keys():
+        config.set('benchmark', key, bench_conf[key])
     with open(out, 'w') as f:
         config.write(f)
     logger.info('Created configuration file {}'.format(out))
@@ -120,7 +123,8 @@ def _connect_logger(host, port):
 
 def benchmark_handler(event, context):
     system = event.get('system')
-    conf = event.get('conf')
+    sys_conf = event.get('conf')
+    bench_conf = event.get('bench_conf')
     host = event.get('host')
     port = int(event.get('port'))
     mode = event.get('mode')
@@ -143,7 +147,7 @@ def benchmark_handler(event, context):
     prefix = os.path.join('/tmp', system + '_' + lid)
     conf_file = prefix + '.conf'
     try:
-        _create_ini(logger, system, conf, conf_file)
+        _create_ini(logger, system, sys_conf, bench_conf, conf_file)
         _run_benchmark(logger, lid, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist, bin_path)
     except Exception as e:
         logger.error(e)
