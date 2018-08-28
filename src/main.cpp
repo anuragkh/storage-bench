@@ -6,7 +6,7 @@
 #include "benchmark.h"
 #include "key_generator.h"
 
-#define LAMBDA_TIMEOUT_SAFE (240 * 1000 * 1000)
+#define LAMBDA_TIMEOUT_SAFE 240
 
 int main(int argc, char **argv) {
   if (argc != 9) {
@@ -62,8 +62,9 @@ int main(int argc, char **argv) {
 
   auto s_if = storage_interfaces::get_interface(system);
   auto s_conf = conf.get_child(system);
+  auto b_conf = conf.get_child("benchmark");
   std::string output_prefix = result_prefix + "_" + std::to_string(value_size);
-  uint64_t timeout = LAMBDA_TIMEOUT_SAFE;
+  uint64_t timeout = b_conf.get<uint64_t>("timeout", LAMBDA_TIMEOUT_SAFE) * 1000 * 1000;
   if (!strcmp(argv[8], "zipf")) {
     auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
