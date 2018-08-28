@@ -170,13 +170,12 @@ def listen_connection(s, num_connections, trigger_count=1):
                     if n_closed == num_connections:
                         inputs.remove(s)
                         s.close()
-                elif 'READY' in msg:
-                    print('Received msg: {}'.format(msg))
-                    i = msg.split('READY:')[1]
-                    print('... lambda_id={} ready ...')
-                    if i not in connected:
-                        print('... Queuing lambda_id={} ...')
-                        connected.add(i)
+                elif 'READY:' in msg:
+                    lambda_id = msg.split('READY:')[1]
+                    print('... lambda_id={} ready ...'.format(lambda_id))
+                    if lambda_id not in connected:
+                        print('... Queuing lambda_id={} ...'.format(lambda_id))
+                        connected.add(lambda_id)
                         ready.append(r)
                         if len(ready) % trigger_count == 0:
                             for sock in ready:
@@ -184,13 +183,14 @@ def listen_connection(s, num_connections, trigger_count=1):
                                 sock.send(b('RUN'))
                             ready = []
                     else:
-                        print('... Aborting lambda_id={} ...'.format(i))
+                        print('... Aborting lambda_id={} ...'.format(lambda_id))
                         r.send(b('ABORT'))
                         inputs.remove(r)
                         r.close()
 
                 else:
-                    print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), msg))
+                    for line in msg.splitlines():
+                        print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
 
 
 def log_process(host, port, num_loggers, trigger_count=1):
