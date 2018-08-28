@@ -172,7 +172,7 @@ def listen_connection(s, num_connections, trigger_count=1):
                         s.close()
                 elif 'READY' in msg:
                     print('Received msg: {}'.format(msg))
-                    i = msg.split(':')[1]
+                    i = msg.split('READY:')[1]
                     if i not in connected:
                         print('Queuing lambda_id={}')
                         connected.add(i)
