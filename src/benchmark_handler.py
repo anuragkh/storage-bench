@@ -55,6 +55,13 @@ class Logger(object):
     def _log(self, msg_type, msg):
         self.f.send(b('{} {}'.format(msg_type, msg).rstrip()))
 
+    def signal(self):
+        self.f.send(b('READY'))
+        data = self.f.recv(4)
+        msg = bytes_to_str(data.rstrip().lstrip())
+        if msg is not 'RUN':
+            raise RuntimeError('Invalid response: {}'.format(data))
+
     def close(self):
         self.f.send(b('CLOSE'))
         self.f.shutdown(socket.SHUT_RDWR)
@@ -87,6 +94,7 @@ def _copy_results(logger, system, result):
 def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
     executable = _init_bin(bin_path, lambda_id)
     cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
+    logger.signal()
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     try:
         subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())

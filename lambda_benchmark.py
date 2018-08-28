@@ -18,7 +18,7 @@ from botocore.exceptions import ClientError
 from six.moves import configparser
 
 from src import benchmark_handler
-from src.benchmark_handler import bytes_to_str
+from src.benchmark_handler import bytes_to_str, b
 
 iam_client = boto3.client('iam')
 lambda_client = boto3.client('lambda')
@@ -146,9 +146,10 @@ def run_server(host, port):
     return s
 
 
-def listen_connection(s, num_connections):
+def listen_connection(s, num_connections, trigger_count=1):
     inputs = [s]
     outputs = []
+    ready = []
     n_closed = 0
     while inputs:
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
@@ -168,13 +169,20 @@ def listen_connection(s, num_connections):
                     if n_closed == num_connections:
                         inputs.remove(s)
                         s.close()
+                elif 'READY' in msg:
+                    ready.append(r)
+                    if len(ready) % trigger_count == 0:
+                        for sock in ready:
+                            print('Function @ {} {} ==RUN=='.format(sock.getpeername(), datetime.datetime.now()))
+                            sock.send(b('RUN'))
+                        ready.clear()
                 else:
                     print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), msg))
 
 
-def log_process(host, port, num_loggers):
+def log_process(host, port, num_loggers, trigger_count=1):
     s = run_server(host, port)
-    p = Process(target=listen_connection, args=(s, num_loggers,))
+    p = Process(target=listen_connection, args=(s, num_loggers, trigger_count,))
     p.start()
     return p
 
@@ -223,7 +231,7 @@ def main():
             args.num_ops = num_ops(args.system, args.obj_size)
         if args.mode.startswith('scale'):
             _, mode, n, period, num_periods = args.mode.split(':')
-            lp = log_process(args.host, args.port, int(n) * int(num_periods))
+            lp = log_process(args.host, args.port, int(n) * int(num_periods), int(n))
             processes = invoke_n_periodically(args, mode, int(n), int(period), int(num_periods))
             processes.append(lp)
         else:
