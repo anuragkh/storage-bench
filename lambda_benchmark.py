@@ -92,12 +92,8 @@ def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
         id=lambda_id
     )
     if args.invoke:
-        if not args.quieter:
-            print('... Invoking function with lambda_id={} ...'.format(lambda_id))
         return invoke_lambda(e)
     elif args.invoke_local:
-        if not args.quieter:
-            print('... Invoking function locally with lambda_id={} ...'.format(lambda_id))
         return invoke_locally(e)
 
 
@@ -149,12 +145,13 @@ def run_server(host, port):
     return s
 
 
-def listen_connection(s, num_connections, trigger_count=1, suppress_function_log=False, suppress_all_log=False):
+def listen_connection(s, num_connections, period, trigger_count=1, suppress_function_log=False, suppress_all_log=False):
     inputs = [s]
     outputs = []
     ready = []
     connected = set()
     n_closed = 0
+    last_wave_ts = -1
     while inputs:
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
         for r in readable:
@@ -166,8 +163,8 @@ def listen_connection(s, num_connections, trigger_count=1, suppress_function_log
                 data = r.recv(4096)
                 msg = bytes_to_str(data.rstrip().lstrip())
                 if 'CLOSE' in msg or not data:
-                    if not suppress_all_log and not suppress_function_log:
-                        print('Function @ {} {} Finished execution'.format(r.getpeername(), datetime.datetime.now()))
+                    if not suppress_all_log:
+                        print('... Function @ {} finished execution ...'.format(r.getpeername()))
                     inputs.remove(r)
                     r.close()
                     n_closed += 1
@@ -184,11 +181,15 @@ def listen_connection(s, num_connections, trigger_count=1, suppress_function_log
                         connected.add(lambda_id)
                         ready.append(r)
                         if len(ready) % trigger_count == 0:
+                            elapsed = time.time() - last_wave_ts
+                            if last_wave_ts != -1 and elapsed < period:
+                                time.sleep(period - elapsed)
                             for sock in ready:
                                 if not suppress_all_log:
                                     print('... Running function @ {} ...'.format(sock.getpeername()))
                                 sock.send(b('RUN'))
                             ready = []
+                            last_wave_ts = time.time()
                     else:
                         if not suppress_all_log:
                             print('... Aborting lambda_id={} ...'.format(lambda_id))
