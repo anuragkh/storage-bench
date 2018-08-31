@@ -183,6 +183,7 @@ def listen_connection(s, num_connections, period, trigger_count=1, suppress_func
                         if len(ready) % trigger_count == 0:
                             elapsed = time.time() - last_wave_ts
                             if last_wave_ts != -1 and elapsed < period:
+                                print('... Sleeping for {}s ...'.format(period - elapsed))
                                 time.sleep(period - elapsed)
                             for sock in ready:
                                 if not suppress_all_log:
@@ -266,7 +267,7 @@ def main():
         for p in processes:
             if p is not None:
                 p.join()
-                print('{} terminated'.format(p))
+                print('... {} terminated ...'.format(p))
 
 
 if __name__ == '__main__':
