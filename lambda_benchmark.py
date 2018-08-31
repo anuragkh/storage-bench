@@ -92,10 +92,12 @@ def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
         id=lambda_id
     )
     if args.invoke:
-        print('Invoking function with lambda_id={}'.format(lambda_id))
+        if not args.quieter:
+            print('... Invoking function with lambda_id={} ...'.format(lambda_id))
         return invoke_lambda(e)
     elif args.invoke_local:
-        print('Invoking function locally with lambda_id={}'.format(lambda_id))
+        if not args.quieter:
+            print('... Invoking function locally with lambda_id={} ...'.format(lambda_id))
         return invoke_locally(e)
 
 
@@ -147,7 +149,7 @@ def run_server(host, port):
     return s
 
 
-def listen_connection(s, num_connections, trigger_count=1):
+def listen_connection(s, num_connections, trigger_count=1, suppress_function_log=False, suppress_all_log=False):
     inputs = [s]
     outputs = []
     ready = []
@@ -164,7 +166,8 @@ def listen_connection(s, num_connections, trigger_count=1):
                 data = r.recv(4096)
                 msg = bytes_to_str(data.rstrip().lstrip())
                 if 'CLOSE' in msg or not data:
-                    print('Function @ {} {} Finished execution'.format(r.getpeername(), datetime.datetime.now()))
+                    if not suppress_all_log and not suppress_function_log:
+                        print('Function @ {} {} Finished execution'.format(r.getpeername(), datetime.datetime.now()))
                     inputs.remove(r)
                     r.close()
                     n_closed += 1
@@ -173,30 +176,35 @@ def listen_connection(s, num_connections, trigger_count=1):
                         s.close()
                 elif 'READY:' in msg:
                     lambda_id = msg.split('READY:')[1]
-                    print('... lambda_id={} ready ...'.format(lambda_id))
+                    if not suppress_all_log:
+                        print('... lambda_id={} ready ...'.format(lambda_id))
                     if lambda_id not in connected:
-                        print('... Queuing lambda_id={} ...'.format(lambda_id))
+                        if not suppress_all_log:
+                            print('... Queuing lambda_id={} ...'.format(lambda_id))
                         connected.add(lambda_id)
                         ready.append(r)
                         if len(ready) % trigger_count == 0:
                             for sock in ready:
-                                print('Function @ {} {} RUN'.format(sock.getpeername(), datetime.datetime.now()))
+                                if not suppress_all_log:
+                                    print('... Running function @ {} ...'.format(sock.getpeername()))
                                 sock.send(b('RUN'))
                             ready = []
                     else:
-                        print('... Aborting lambda_id={} ...'.format(lambda_id))
+                        if not suppress_all_log:
+                            print('... Aborting lambda_id={} ...'.format(lambda_id))
                         r.send(b('ABORT'))
                         inputs.remove(r)
                         r.close()
 
                 else:
                     for line in msg.splitlines():
-                        print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
+                        if not suppress_all_log and not suppress_function_log:
+                            print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
 
 
-def log_process(host, port, num_loggers, trigger_count=1):
+def log_process(host, port, num_loggers, trigger_count=1, supress_function_log=False, suppress_all_log=False):
     s = run_server(host, port)
-    p = Process(target=listen_connection, args=(s, num_loggers, trigger_count,))
+    p = Process(target=listen_connection, args=(s, num_loggers, trigger_count, supress_function_log, suppress_all_log))
     p.start()
     return p
 
@@ -218,6 +226,8 @@ def main():
     parser.add_argument('--create', action='store_true', help='create AWS Lambda function')
     parser.add_argument('--invoke', action='store_true', help='invoke AWS Lambda function')
     parser.add_argument('--invoke-local', action='store_true', help='invoke AWS Lambda function locally')
+    parser.add_argument('--quiet', action='store_true', help='Suppress function logs')
+    parser.add_argument('--quieter', action='store_true', help='Suppress all logs')
     parser.add_argument('--system', type=str, default='s3', help='system to benchmark')
     parser.add_argument('--conf', type=str, default='conf/storage_bench.conf', help='configuration file')
     parser.add_argument('--host', type=str, default=socket.gethostname(), help='name of host where script is run')
@@ -245,7 +255,7 @@ def main():
             args.num_ops = num_ops(args.system, args.obj_size)
         if args.mode.startswith('scale'):
             _, mode, n, period, num_periods = args.mode.split(':')
-            lp = log_process(args.host, args.port, int(n) * int(num_periods), int(n))
+            lp = log_process(args.host, args.port, int(n) * int(num_periods), int(n), args.quiet, args.quieter)
             processes = invoke_n_periodically(args, mode, int(n), int(period), int(num_periods))
             processes.append(lp)
         else:
