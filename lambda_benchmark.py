@@ -204,9 +204,11 @@ def listen_connection(s, num_connections, period, trigger_count=1, suppress_func
                             print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
 
 
-def log_process(host, port, num_loggers, trigger_count=1, supress_function_log=False, suppress_all_log=False):
+def log_process(host, port, period=0, num_loggers=1, trigger_count=1, suppress_function_log=False,
+                suppress_all_log=False):
     s = run_server(host, port)
-    p = Process(target=listen_connection, args=(s, num_loggers, trigger_count, supress_function_log, suppress_all_log))
+    p = Process(target=listen_connection,
+                args=(s, num_loggers, period, trigger_count, suppress_function_log, suppress_all_log))
     p.start()
     return p
 
@@ -257,7 +259,8 @@ def main():
             args.num_ops = num_ops(args.system, args.obj_size)
         if args.mode.startswith('scale'):
             _, mode, n, period, num_periods = args.mode.split(':')
-            lp = log_process(args.host, args.port, int(n) * int(num_periods), int(n), args.quiet, args.quieter)
+            lp = log_process(args.host, args.port, int(period), int(n) * int(num_periods), int(n), args.quiet,
+                             args.quieter)
             processes = invoke_n_periodically(args, mode, int(n), int(period), int(num_periods))
             processes.append(lp)
         else:
