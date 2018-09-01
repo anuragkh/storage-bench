@@ -260,7 +260,7 @@ def main():
             _, mode, n, period, num_periods = args.mode.split(':')
             lp = log_process(args.host, args.port, int(period), int(n) * int(num_periods), int(n), args.quiet,
                              args.quieter)
-            processes = invoke_n_periodically(args, mode, int(n), int(period), int(num_periods))
+            processes = invoke_n(args, mode, int(n) * int(num_periods))
             processes.append(lp)
         else:
             lp = log_process(args.host, args.port, 1)
