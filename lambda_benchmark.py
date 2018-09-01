@@ -172,7 +172,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
     inputs = [s]
     outputs = []
     ready = []
-    connected = set()
+    ids = set()
     run = True
     while run:
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
@@ -189,21 +189,21 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
                     r.close()
                 else:
                     print('DEBUG: [{}]'.format(msg))
-                    lambda_id = msg.split('READY:')[1]
+                    i = int(msg.split('READY:')[1])
                     if log:
-                        print('... Function id={} ready ...'.format(lambda_id))
-                    if lambda_id not in connected:
+                        print('... Function id={} ready ...'.format(i))
+                    if i not in ids:
                         if log:
-                            print('... Queuing function id={} ...'.format(lambda_id))
-                        connected.add(lambda_id)
-                        ready.append((lambda_id, r))
-                        if len(connected) == workers_per_trigger * trigger_count:
+                            print('... Queuing function id={} ...'.format(i))
+                        ids.add(i)
+                        ready.append((i, r))
+                        if len(ids) == workers_per_trigger * trigger_count:
                             run = False
                         else:
-                            print('.. Progress {}/{}'.format(len(connected), workers_per_trigger * trigger_count))
+                            print('.. Progress {}/{}'.format(len(ids), workers_per_trigger * trigger_count))
                     else:
                         if log:
-                            print('... Aborting function id={} ...'.format(lambda_id))
+                            print('... Aborting function id={} ...'.format(i))
                         r.send(b('ABORT'))
                         inputs.remove(r)
                         r.close()
@@ -216,6 +216,8 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
             if log:
                 print('... Running function id={} ...'.format(i))
             sock.send(b('RUN'))
+        if log:
+            print('.. End of wave ..')
         time.sleep(trigger_period)
     s.close()
 
@@ -293,6 +295,7 @@ def main():
             trigger_period = int(trigger_period)
             num_triggers = int(num_triggers)
             num_functions = workers_per_trigger * num_triggers
+            print('.. Number of functions to launch = {} ..'.format(num_functions))
             lp = log_process(host, log_port, num_functions, log_function)
             op = control_process(host, control_port, workers_per_trigger, num_triggers, trigger_period, log_control)
             processes = invoke_n(args, mode, num_functions)
