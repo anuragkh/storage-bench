@@ -226,6 +226,8 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
 
 def log_process(host, port, num_loggers=1, log=True):
     s = run_server(host, port)
+    if log:
+        print('... Log server listening on {}:{} ...'.format(host, port))
     p = Process(target=log_worker, args=(s, num_loggers, log))
     p.start()
     return p
@@ -233,6 +235,8 @@ def log_process(host, port, num_loggers=1, log=True):
 
 def control_process(host, port, workers_per_trigger=1, trigger_count=1, trigger_period=0, log=True):
     s = run_server(host, port)
+    if log:
+        print('... Control server listening on {}:{} ...'.format(host, port))
     p = Process(target=control_worker, args=(s, workers_per_trigger, trigger_count, trigger_period, log))
     p.start()
     return p
