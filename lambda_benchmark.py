@@ -76,7 +76,7 @@ def invoke_locally(e):
     return f
 
 
-def invoke(args, mode, warm_up, lambda_id=str(uuid.uuid4())):
+def invoke(args, mode, warm_up, lambda_id=str(0)):
     e = dict(
         system=args.system,
         conf=parse_ini(args.system, args.conf),
