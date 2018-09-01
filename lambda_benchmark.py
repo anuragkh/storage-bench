@@ -203,6 +203,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
                         print('.. All queued ..')
                         inputs.remove(s)
                         s.close()
+                        break
                     else:
                         print('.. Progress {}/{}'.format(len(connected), workers_per_trigger * trigger_count))
                 else:
