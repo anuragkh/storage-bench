@@ -146,7 +146,7 @@ def run_server(host, port):
 
 def print_logs(r, msg):
     for line in msg.splitlines():
-        print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
+        print('== Function @ {} {} {} =='.format(r.getpeername(), datetime.datetime.now(), line))
 
 
 def log_worker(s, num_connections=1, log=True):
@@ -193,18 +193,21 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
                 msg = bytes_to_str(data.rstrip().lstrip())
                 lambda_id = msg.split('READY:')[1]
                 if log:
-                    print('... lambda_id={} ready ...'.format(lambda_id))
+                    print('... Function id={} ready ...'.format(lambda_id))
                 if lambda_id not in connected:
                     if log:
-                        print('... Queuing lambda_id={} ...'.format(lambda_id))
+                        print('... Queuing function id={} ...'.format(lambda_id))
                     connected.add(lambda_id)
                     ready.append((lambda_id, r))
-                    if len(connected) == workers_per_trigger:
+                    if len(connected) == workers_per_trigger * trigger_count:
+                        print('.. All queued ..')
                         inputs.remove(s)
                         s.close()
+                    else:
+                        print('.. Progress {}/{}'.format(len(connected), workers_per_trigger * trigger_count))
                 else:
                     if log:
-                        print('... Aborting lambda_id={} ...'.format(lambda_id))
+                        print('... Aborting function id={} ...'.format(lambda_id))
                     r.send(b('ABORT'))
                     inputs.remove(r)
                     r.close()
@@ -219,7 +222,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
         for idx in range(t * workers_per_trigger, (t + 1) * workers_per_trigger):
             i, sock = ready[idx]
             if not log:
-                print('... Running lambda_id={} ...'.format(i))
+                print('... Running function id={} ...'.format(i))
             sock.send(b('RUN'))
         last_wave_ts = time.time()
 
