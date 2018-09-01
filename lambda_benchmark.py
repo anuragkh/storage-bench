@@ -192,6 +192,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
             else:
                 data = r.recv(4096)
                 msg = bytes_to_str(data.rstrip().lstrip())
+                print('DEBGUG: [{}]'.format(msg))
                 lambda_id = msg.split('READY:')[1]
                 if log:
                     print('... Function id={} ready ...'.format(lambda_id))
