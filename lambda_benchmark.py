@@ -146,7 +146,7 @@ def run_server(host, port):
 
 def print_logs(r, msg):
     for line in msg.splitlines():
-        print('== Function @ {} {} {} =='.format(r.getpeername(), datetime.datetime.now(), line))
+        print('** Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
 
 
 def log_worker(s, num_connections=1, log=True):
@@ -213,19 +213,13 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
 
     print('.. Starting benchmark ..')
     ready.sort(key=lambda x: x[0])
-    last_wave_ts = -1
     for t in range(trigger_count):
-        elapsed = time.time() - last_wave_ts
-        if last_wave_ts != -1 and elapsed < trigger_period:
-            if log:
-                print('... Sleeping for {}s ...'.format(trigger_period - elapsed))
-            time.sleep(trigger_period - elapsed)
         for idx in range(t * workers_per_trigger, (t + 1) * workers_per_trigger):
             i, sock = ready[idx]
             if log:
                 print('... Running function id={} ...'.format(i))
             sock.send(b('RUN'))
-        last_wave_ts = time.time()
+        time.sleep(trigger_period)
     s.close()
 
 
