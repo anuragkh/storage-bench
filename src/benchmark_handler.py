@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -72,9 +73,18 @@ class Logger(object):
         self.f.close()
 
 
-def _init_bin(bin_path):
-    in_path = os.environ.get('LAMBDA_TASK_ROOT', bin_path)
-    return os.path.join(in_path, 'storage_bench')
+def _clean_tmp():
+    tmp_dir = '/tmp'
+    for f in os.listdir(tmp_dir):
+        p = os.path.join(tmp_dir, f)
+        if os.path.isfile(p):
+            os.unlink(p)
+        elif os.path.isdir(p):
+            shutil.rmtree(p)
+
+
+def _benchmark_binary(bin_path):
+    return os.path.join(os.environ.get('LAMBDA_TASK_ROOT', bin_path), 'storage_bench')
 
 
 def _copy_results(logger, system, result):
@@ -86,7 +96,8 @@ def _copy_results(logger, system, result):
 
 
 def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
-    executable = _init_bin(bin_path)
+    _clean_tmp()
+    executable = _benchmark_binary(bin_path)
     cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     logger.signal(lambda_id)
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
