@@ -179,15 +179,15 @@ def listen_connection(s, num_connections, period, trigger_count=1, suppress_func
                         if not suppress_all_log:
                             print('... Queuing lambda_id={} ...'.format(lambda_id))
                         connected.add(lambda_id)
-                        ready.append(r)
+                        ready.append((lambda_id, r))
                         if len(ready) % trigger_count == 0:
                             elapsed = time.time() - last_wave_ts
                             if last_wave_ts != -1 and elapsed < period:
                                 print('... Sleeping for {}s ...'.format(period - elapsed))
                                 time.sleep(period - elapsed)
-                            for sock in ready:
+                            for i, sock in ready:
                                 if not suppress_all_log:
-                                    print('... Running function @ {} ...'.format(sock.getpeername()))
+                                    print('... Running lambda_id={} ...'.format(i))
                                 sock.send(b('RUN'))
                             ready = []
                             last_wave_ts = time.time()
