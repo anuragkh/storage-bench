@@ -181,7 +181,8 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
     outputs = []
     ready = []
     connected = set()
-    while inputs:
+    run = True
+    while run:
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
         for r in readable:
             if r is s:
@@ -200,9 +201,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
                     connected.add(lambda_id)
                     ready.append((lambda_id, r))
                     if len(connected) == workers_per_trigger * trigger_count:
-                        inputs.remove(s)
-                        s.close()
-                        break
+                        run = False
                     else:
                         print('.. Progress {}/{}'.format(len(connected), workers_per_trigger * trigger_count))
                 else:
@@ -226,6 +225,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
                 print('... Running function id={} ...'.format(i))
             sock.send(b('RUN'))
         last_wave_ts = time.time()
+    s.close()
 
 
 def log_process(host, port, num_loggers=1, log=True):
