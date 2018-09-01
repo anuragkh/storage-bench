@@ -144,13 +144,15 @@ def run_server(host, port):
     return s
 
 
-def listen_connection(s, num_connections, period, trigger_count=1, suppress_function_log=False, suppress_all_log=False):
+def print_logs(r, msg):
+    for line in msg.splitlines():
+        print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
+
+
+def log_worker(s, num_connections=1, log=True):
     inputs = [s]
     outputs = []
-    ready = []
-    connected = set()
     n_closed = 0
-    last_wave_ts = -1
     while inputs:
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
         for r in readable:
@@ -162,52 +164,76 @@ def listen_connection(s, num_connections, period, trigger_count=1, suppress_func
                 data = r.recv(4096)
                 msg = bytes_to_str(data.rstrip().lstrip())
                 if 'CLOSE' in msg or not data:
-                    if not suppress_all_log:
-                        print('... Function @ {} finished execution ...'.format(r.getpeername()))
+                    print_logs(r, msg.replace('CLOSE', ''))
                     inputs.remove(r)
                     r.close()
                     n_closed += 1
                     if n_closed == num_connections:
                         inputs.remove(s)
                         s.close()
-                elif 'READY:' in msg:
-                    lambda_id = msg.split('READY:')[1]
-                    if not suppress_all_log:
-                        print('... lambda_id={} ready ...'.format(lambda_id))
-                    if lambda_id not in connected:
-                        if not suppress_all_log:
-                            print('... Queuing lambda_id={} ...'.format(lambda_id))
-                        connected.add(lambda_id)
-                        ready.append((lambda_id, r))
-                        if len(ready) % trigger_count == 0:
-                            elapsed = time.time() - last_wave_ts
-                            if last_wave_ts != -1 and elapsed < period:
-                                print('... Sleeping for {}s ...'.format(period - elapsed))
-                                time.sleep(period - elapsed)
-                            for i, sock in sorted(ready, key=lambda t: t[0]):
-                                if not suppress_all_log:
-                                    print('... Running lambda_id={} ...'.format(i))
-                                sock.send(b('RUN'))
-                            ready = []
-                            last_wave_ts = time.time()
-                    else:
-                        if not suppress_all_log:
-                            print('... Aborting lambda_id={} ...'.format(lambda_id))
-                        r.send(b('ABORT'))
-                        inputs.remove(r)
-                        r.close()
-
                 else:
-                    for line in msg.splitlines():
-                        if not suppress_all_log and not suppress_function_log:
-                            print('Function @ {} {} {}'.format(r.getpeername(), datetime.datetime.now(), line))
+                    if log:
+                        print_logs(r, msg)
 
 
-def log_process(host, port, period=0, num_loggers=1, trigger_count=1, suppress_function_log=False,
-                suppress_all_log=False):
+def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, log=True):
+    inputs = [s]
+    outputs = []
+    ready = []
+    connected = set()
+    while inputs:
+        readable, writable, exceptional = select.select(inputs, outputs, inputs)
+        for r in readable:
+            if r is s:
+                sock, address = r.accept()
+                sock.setblocking(False)
+                inputs.append(sock)
+            else:
+                data = r.recv(4096)
+                msg = bytes_to_str(data.rstrip().lstrip())
+                lambda_id = msg.split('READY:')[1]
+                if log:
+                    print('... lambda_id={} ready ...'.format(lambda_id))
+                if lambda_id not in connected:
+                    if log:
+                        print('... Queuing lambda_id={} ...'.format(lambda_id))
+                    connected.add(lambda_id)
+                    ready.append((lambda_id, r))
+                    if len(connected) == workers_per_trigger:
+                        inputs.remove(s)
+                        s.close()
+                else:
+                    if log:
+                        print('... Aborting lambda_id={} ...'.format(lambda_id))
+                    r.send(b('ABORT'))
+                    inputs.remove(r)
+                    r.close()
+
+    ready.sort(key=lambda x: x[0])
+    last_wave_ts = -1
+    for t in range(trigger_count):
+        elapsed = time.time() - last_wave_ts
+        if last_wave_ts != -1 and elapsed < trigger_period:
+            print('... Sleeping for {}s ...'.format(trigger_period - elapsed))
+            time.sleep(trigger_period - elapsed)
+        for idx in range(t * workers_per_trigger, (t + 1) * workers_per_trigger):
+            i, sock = ready[idx]
+            if not log:
+                print('... Running lambda_id={} ...'.format(i))
+            sock.send(b('RUN'))
+        last_wave_ts = time.time()
+
+
+def log_process(host, port, num_loggers=1, log=True):
     s = run_server(host, port)
-    p = Process(target=listen_connection,
-                args=(s, num_loggers, period, trigger_count, suppress_function_log, suppress_all_log))
+    p = Process(target=log_worker, args=(s, num_loggers, log))
+    p.start()
+    return p
+
+
+def control_process(host, port, workers_per_trigger=1, trigger_count=1, trigger_period=0, log=True):
+    s = run_server(host, port)
+    p = Process(target=control_worker, args=(s, workers_per_trigger, trigger_count, trigger_period, log))
     p.start()
     return p
 
@@ -254,17 +280,28 @@ def main():
         print('Creation successful!')
 
     if args.invoke or args.invoke_local:
+        log_function = not args.quiet and not args.quieter
+        log_control = not args.quieter
+        host = args.host
+        log_port = args.port
+        control_port = log_port + 1
         if args.num_ops == -1:
             args.num_ops = num_ops(args.system, args.obj_size)
         if args.mode.startswith('scale'):
-            _, mode, n, period, num_periods = args.mode.split(':')
-            lp = log_process(args.host, args.port, int(period), int(n) * int(num_periods), int(n), args.quiet,
-                             args.quieter)
-            processes = invoke_n(args, mode, int(n) * int(num_periods))
+            _, mode, workers_per_trigger, trigger_period, num_triggers = args.mode.split(':')
+            workers_per_trigger = int(workers_per_trigger)
+            trigger_period = int(trigger_period)
+            num_triggers = int(num_triggers)
+            num_functions = workers_per_trigger * num_triggers
+            lp = log_process(host, log_port, num_functions, log_function)
+            op = control_process(host, control_port, workers_per_trigger, num_triggers, trigger_period, log_control)
+            processes = invoke_n(args, mode, num_functions)
             processes.append(lp)
+            processes.append(op)
         else:
-            lp = log_process(args.host, args.port, 1)
-            processes = [invoke(args, args.mode, 1), lp]
+            lp = log_process(host, log_port)
+            op = control_process(host, control_port)
+            processes = [invoke(args, args.mode, 1), lp, op]
 
         for p in processes:
             if p is not None:
