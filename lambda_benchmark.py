@@ -10,7 +10,6 @@ import select
 import socket
 import sys
 import time
-import uuid
 from multiprocessing import Process
 
 import boto3
@@ -185,7 +184,7 @@ def listen_connection(s, num_connections, period, trigger_count=1, suppress_func
                             if last_wave_ts != -1 and elapsed < period:
                                 print('... Sleeping for {}s ...'.format(period - elapsed))
                                 time.sleep(period - elapsed)
-                            for i, sock in ready:
+                            for i, sock in sorted(ready, key=lambda t: t[0]):
                                 if not suppress_all_log:
                                     print('... Running lambda_id={} ...'.format(i))
                                 sock.send(b('RUN'))

@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os
-import shutil
 import socket
 import subprocess
 import sys
@@ -67,20 +66,15 @@ class Logger(object):
         self.f.shutdown(socket.SHUT_RDWR)
         self.f.close()
 
+    def abort(self, msg):
+        self.f.send('ABORT:{}'.format(msg))
+        self.f.shutdown(socket.SHUT_RDWR)
+        self.f.close()
 
-def _init_bin(bin_path, lambda_id):
-    if not os.path.exists('/tmp/bin'):
-        os.makedirs('/tmp/bin')
+
+def _init_bin(bin_path):
     in_path = os.environ.get('LAMBDA_TASK_ROOT', bin_path)
-    out_path = os.environ.get('TMP_PATH', os.path.join('/tmp', lambda_id, 'bin'))
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-    cur_file = os.path.join(in_path, 'storage_bench')
-    new_file = os.path.join(out_path, 'storage_bench')
-    if not os.path.isfile(new_file):
-        shutil.copy2(cur_file, new_file)
-        os.chmod(new_file, 0o775)
-    return new_file
+    return os.path.join(in_path, 'storage_bench')
 
 
 def _copy_results(logger, system, result):
@@ -92,7 +86,7 @@ def _copy_results(logger, system, result):
 
 
 def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
-    executable = _init_bin(bin_path, lambda_id)
+    executable = _init_bin(bin_path)
     cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     logger.signal(lambda_id)
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
@@ -151,8 +145,8 @@ def benchmark_handler(event, context):
         _run_benchmark(logger, lid, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist, bin_path)
     except Exception as e:
         logger.error(e)
+        logger.abort(e)
     finally:
         for result_suffix in result_suffixes:
             _copy_results(logger, system, prefix + '_' + str(object_size) + result_suffix)
-
-    logger.close()
+        logger.close()
