@@ -200,7 +200,6 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
                     connected.add(lambda_id)
                     ready.append((lambda_id, r))
                     if len(connected) == workers_per_trigger * trigger_count:
-                        print('.. All queued ..')
                         inputs.remove(s)
                         s.close()
                         break
@@ -213,6 +212,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
                     inputs.remove(r)
                     r.close()
 
+    print('.. Starting benchmark ..')
     ready.sort(key=lambda x: x[0])
     last_wave_ts = -1
     for t in range(trigger_count):
