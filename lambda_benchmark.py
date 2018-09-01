@@ -96,16 +96,8 @@ def invoke(args, mode, warm_up, lambda_id=str(0)):
         return invoke_locally(e)
 
 
-def invoke_n(args, mode, n, base=0):
-    return [invoke(args, mode, 0, str(base + i)) for i in range(n)]
-
-
-def invoke_n_periodically(args, mode, n, period, num_periods):
-    p = []
-    for i in range(num_periods):
-        p.extend(invoke_n(args, mode, n, i * n))
-        time.sleep(period)
-    return p
+def invoke_n(args, mode, n):
+    return [invoke(args, mode, 0, str(i)) for i in range(n)]
 
 
 def is_socket_valid(socket_instance):
@@ -192,25 +184,29 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
             else:
                 data = r.recv(4096)
                 msg = bytes_to_str(data.rstrip().lstrip())
-                print('DEBGUG: [{}]'.format(msg))
-                lambda_id = msg.split('READY:')[1]
-                if log:
-                    print('... Function id={} ready ...'.format(lambda_id))
-                if lambda_id not in connected:
-                    if log:
-                        print('... Queuing function id={} ...'.format(lambda_id))
-                    connected.add(lambda_id)
-                    ready.append((lambda_id, r))
-                    if len(connected) == workers_per_trigger * trigger_count:
-                        run = False
-                    else:
-                        print('.. Progress {}/{}'.format(len(connected), workers_per_trigger * trigger_count))
-                else:
-                    if log:
-                        print('... Aborting function id={} ...'.format(lambda_id))
-                    r.send(b('ABORT'))
+                if not data:
                     inputs.remove(r)
                     r.close()
+                else:
+                    print('DEBUG: [{}]'.format(msg))
+                    lambda_id = msg.split('READY:')[1]
+                    if log:
+                        print('... Function id={} ready ...'.format(lambda_id))
+                    if lambda_id not in connected:
+                        if log:
+                            print('... Queuing function id={} ...'.format(lambda_id))
+                        connected.add(lambda_id)
+                        ready.append((lambda_id, r))
+                        if len(connected) == workers_per_trigger * trigger_count:
+                            run = False
+                        else:
+                            print('.. Progress {}/{}'.format(len(connected), workers_per_trigger * trigger_count))
+                    else:
+                        if log:
+                            print('... Aborting function id={} ...'.format(lambda_id))
+                        r.send(b('ABORT'))
+                        inputs.remove(r)
+                        r.close()
 
     print('.. Starting benchmark ..')
     ready.sort(key=lambda x: x[0])
