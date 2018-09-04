@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <thrift/transport/TBufferTransports.h>
+#include <thrift/transport/TSocket.h>
 #include <thrift/protocol/TBinaryProtocol.h>
 
 namespace mmux {
@@ -18,7 +19,7 @@ class client_cache {
                      std::shared_ptr<C>> value_type;
   typedef std::map<key_type, value_type> cache_type;
 
-  client_cache() {}
+  client_cache() = default;
 
   ~client_cache() {
     for (auto const &entry: cache_) {
@@ -28,7 +29,7 @@ class client_cache {
     }
   }
 
-  value_type get(const std::string &host, int port) {
+  value_type get(const std::string &host, int port, int timeout_ms=0) {
     using namespace apache::thrift;
     key_type key(host, port);
     typename cache_type::iterator it;
@@ -36,6 +37,8 @@ class client_cache {
       return it->second;
     }
     auto sock = std::make_shared<transport::TSocket>(host, port);
+    if (timeout_ms > 0)
+      sock->setRecvTimeout(timeout_ms);
     auto transport = std::shared_ptr<transport::TTransport>(new transport::TBufferedTransport(sock));
     auto prot = std::shared_ptr<protocol::TProtocol>(new protocol::TBinaryProtocol(transport));
     auto client = std::make_shared<C>(prot);

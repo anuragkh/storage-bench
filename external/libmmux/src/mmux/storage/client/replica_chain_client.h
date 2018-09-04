@@ -35,7 +35,11 @@ class replica_chain_client {
     std::vector<std::string> redirect_chain_;
   };
 
-  explicit replica_chain_client(const std::vector<std::string> &chain, int timeout_ms = 0);
+  typedef block_request_serviceClient thrift_client;
+  typedef utils::client_cache<thrift_client> client_cache;
+
+  replica_chain_client(client_cache& cache, const std::vector<std::string> &chain, int timeout_ms = 0);
+  replica_chain_client(const std::vector<std::string> &chain, int timeout_ms = 0);
 
   ~replica_chain_client();
 
@@ -50,6 +54,7 @@ class replica_chain_client {
   std::vector<std::string> run_command(int32_t cmd_id, const std::vector<std::string> &args);
   std::vector<std::string> run_command_redirected(int32_t cmd_id, const std::vector<std::string> &args);
  private:
+  void connect(client_cache& cache, const std::vector<std::string> &chain, int timeout_ms = 0);
   void connect(const std::vector<std::string> &chain, int timeout_ms = 0);
   void disconnect();
 

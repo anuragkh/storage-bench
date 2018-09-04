@@ -51,6 +51,9 @@ class kv_client {
     std::vector<locked_block_ptr_t> new_blocks_;
   };
 
+  typedef block_request_serviceClient thrift_client;
+  typedef utils::client_cache<thrift_client> client_cache;
+
   kv_client(std::shared_ptr<directory::directory_ops> fs,
             const std::string &path,
             const directory::data_status &status,
@@ -77,11 +80,13 @@ class kv_client {
   void handle_redirect(int32_t cmd_id, const std::vector<std::string> &args, std::string &response);
   void handle_redirects(int32_t cmd_id, const std::vector<std::string> &args, std::vector<std::string> &responses);
 
+  client_cache client_cache_;
   std::shared_ptr<directory::directory_ops> fs_;
   std::string path_;
   directory::data_status status_;
   std::vector<std::shared_ptr<replica_chain_client>> blocks_;
   std::vector<int32_t> slots_;
+  int timeout_ms_;
 };
 
 }

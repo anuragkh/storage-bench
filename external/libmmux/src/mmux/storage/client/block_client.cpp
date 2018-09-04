@@ -20,6 +20,14 @@ int64_t block_client::get_client_id() {
   return client_->get_client_id();
 }
 
+void block_client::connect(client_cache& cache, const std::string &host, int port, int block_id, int timeout_ms) {
+  block_id_ = block_id;
+  auto tup = cache.get(host, port, timeout_ms);
+  transport_ = std::get<0>(tup);
+  protocol_ = std::get<1>(tup);
+  client_ = std::get<2>(tup);
+}
+
 void block_client::connect(const std::string &host, int port, int block_id, int timeout_ms) {
   block_id_ = block_id;
   auto sock = std::make_shared<TSocket>(host, port);
