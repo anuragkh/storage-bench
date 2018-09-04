@@ -1,5 +1,5 @@
 #include "memorymux.h"
-
+#include "mmux/directory/directory_ops.h"
 void memorymux::init(const property_map &conf, bool create) {
   m_mmux_client = std::make_shared<mmux::client::mmux_client>(conf.get<std::string>("host", "127.0.0.1"),
                                                               conf.get<int>("service_port", 9090),
@@ -10,7 +10,7 @@ void memorymux::init(const property_map &conf, bool create) {
     create = true;
   }
   if (create) {
-    m_client = m_mmux_client->create(m_mmux_path, "local://tmp");
+    m_client = m_mmux_client->create(m_mmux_path, "local://tmp", 1, 1, mmux::directory::data_status::PINNED);
   } else {
     m_client = m_mmux_client->open(m_mmux_path);
   }
