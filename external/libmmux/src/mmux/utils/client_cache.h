@@ -60,6 +60,17 @@ class client_cache {
     return cache_.at(key);
   }
 
+  void remove(const std::string &host, int port) {
+    key_type key(host, port);
+    typename cache_type::iterator it;
+    if ((it = cache_.find(key)) != cache_.end()) {
+      if (std::get<0>(it->second)->isOpen()) {
+        std::get<0>(it->second)->close();
+      }
+      cache_.erase(it);
+    }
+  }
+
  private:
   cache_type cache_;
 };
