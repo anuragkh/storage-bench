@@ -218,6 +218,7 @@ def control_worker(s, workers_per_trigger=1, trigger_count=1, trigger_period=0, 
             sock.send(b('RUN'))
         if log:
             print('.. End of wave ..')
+            print('.. Sleeping for {}s ..'.format(trigger_period))
         time.sleep(trigger_period)
     s.close()
 

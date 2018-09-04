@@ -37,20 +37,31 @@ void memorymux::destroy() {
   m_mmux_client.reset();
 }
 
-void memorymux::write_async(const std::string &, const std::string &) {
-  throw std::runtime_error("Not supported");
+void memorymux::write_async(const std::string &key, const std::string &value) {
+  m_writes.push_back(key);
+  m_writes.push_back(value);
 }
 
-void memorymux::read_async(const std::string &) {
-  throw std::runtime_error("Not supported");
+void memorymux::read_async(const std::string &key) {
+  m_reads.push_back(key);
 }
 
 void memorymux::wait_write() {
-  throw std::runtime_error("Not supported");
+  m_client->put(m_writes);
+  m_writes.clear();
 }
 
 std::string memorymux::wait_read() {
-  throw std::runtime_error("Not supported");
+  if (!m_reads.empty()) {
+    auto ret = m_client->get(m_reads);
+    for (const auto &r: ret) {
+      m_read_results.push(r);
+    }
+    m_reads.clear();
+  }
+  auto r = std::move(m_read_results.front());
+  m_read_results.pop();
+  return r;
 }
 
 REGISTER_STORAGE_IFACE("mmux", memorymux);
