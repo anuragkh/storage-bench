@@ -47,8 +47,18 @@ void memorymux::read_async(const std::string &key) {
 }
 
 void memorymux::wait_write() {
-  m_client->put(m_writes);
-  m_writes.clear();
+  if (!m_writes.empty()) {
+    auto ret = m_client->put(m_writes);
+    for (const auto &r: ret) {
+      m_write_results.push(r);
+    }
+    m_writes.clear();
+  }
+  auto r = std::move(m_write_results.front());
+  m_write_results.pop();
+  if (r != "!ok") {
+    throw std::runtime_error(r);
+  }
 }
 
 std::string memorymux::wait_read() {

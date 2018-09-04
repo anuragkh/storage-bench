@@ -19,6 +19,7 @@ class memorymux: public storage_interface {
   std::vector<std::string> m_writes;
   std::vector<std::string> m_reads;
   std::queue<std::string> m_read_results;
+  std::queue<std::string> m_write_results;
   std::string m_mmux_path;
   std::shared_ptr<mmux::client::mmux_client> m_mmux_client;
   std::shared_ptr<mmux::storage::kv_client> m_client;
