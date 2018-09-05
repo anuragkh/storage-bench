@@ -43,6 +43,7 @@ class storage_interface {
     }
 
     std::string msg = "READY:" + id;
+    std::cerr << "Signalling " << host << ":" << port << " with message " << msg << std::endl;
     ::send(sock, msg.data(), msg.length(), 0);
 
     char buffer[1024] = {0};
