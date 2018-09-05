@@ -8,9 +8,45 @@
 #include <boost/property_tree/ptree.hpp>
 #include <iostream>
 
+#include <stdio.h>
+#include <sys/socket.h>
+#include <stdlib.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <arpa/inet.h>
+
 class storage_interface {
  public:
   typedef boost::property_tree::ptree property_map;
+
+  bool signal(const std::string &host, int port, const std::string &id) {
+    int sock = 0;
+    struct sockaddr_in serv_addr{};
+    std::string msg = "READY:" + id;
+    char buffer[1024] = {0};
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+      std::cerr << "Socket creation error" << std::endl;
+      return false;
+    }
+    memset(&serv_addr, 0, sizeof(serv_addr));
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    // Convert IPv4 and IPv6 addresses from text to binary form
+    if (inet_pton(AF_INET, host.c_str(), &serv_addr.sin_addr) <= 0) {
+      std::cerr << "Invalid address/address not supported" << std::endl;
+      return false;
+    }
+
+    if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+      std::cerr << "Connection failed" << std::endl;
+      return false;
+    }
+    ::send(sock, msg.data(), msg.length(), 0);
+    ::read(sock, buffer, 1024);
+    std::cerr << "buffer: [" << buffer << "]" << std::endl;
+    return strcmp(buffer, "RUN") == 0;
+  }
 
   virtual void init(const property_map &conf, bool create) = 0;
   virtual void write(const std::string &key, const std::string &value) = 0;

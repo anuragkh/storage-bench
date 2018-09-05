@@ -65,19 +65,6 @@ class Logger(object):
         self.f.close()
 
 
-class Controller(object):
-    def __init__(self, f):
-        self.f = f
-
-    def signal(self, lambda_id):
-        self.f.send(b('READY:' + str(lambda_id)))
-        data = self.f.recv(10)
-        msg = bytes_to_str(data.rstrip().lstrip())
-        self.f.close()
-        if msg != 'RUN':
-            sys.exit(0)
-
-
 def _benchmark_binary(bin_path):
     return os.path.join(os.environ.get('LAMBDA_TASK_ROOT', bin_path), 'storage_bench')
 
@@ -90,10 +77,9 @@ def _copy_results(logger, system, result):
             bucket.put_object(Key=os.path.join(system, os.path.basename(result)), Body=data)
 
 
-def _run_benchmark(logger, controller, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
+def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
     executable = _benchmark_binary(bin_path)
-    cmdline = [executable, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
-    controller.signal(lambda_id)
+    cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     try:
         subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
@@ -120,19 +106,12 @@ def _connect_logger(host, port):
     return Logger(sock)
 
 
-def _connect_controller(host, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, port))
-    return Controller(sock)
-
-
 def benchmark_handler(event, context):
     system = event.get('system')
     sys_conf = event.get('conf')
     bench_conf = event.get('bench_conf')
     host = event.get('host')
     log_port = int(event.get('port'))
-    control_port = log_port + 1
     mode = event.get('mode')
     i = event.get('id')
     bin_path = event.get('bin_path')
@@ -148,19 +127,13 @@ def benchmark_handler(event, context):
         print('Exception: {}'.format(e))
         raise
 
-    try:
-        controller = _connect_controller(host, control_port)
-    except Exception as e:
-        print('Exception: {}'.format(e))
-        raise
-
     logger.info('Event: {}, Context: {}'.format(event, context))
 
     prefix = os.path.join('/tmp', system + '_' + i)
     conf_file = prefix + '.conf'
     try:
         _create_ini(logger, system, sys_conf, bench_conf, conf_file)
-        _run_benchmark(logger, controller, i, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist,
+        _run_benchmark(logger, i, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist,
                        bin_path)
     except Exception as e:
         logger.error(e)

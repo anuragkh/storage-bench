@@ -26,14 +26,17 @@ class benchmark {
  public:
   template<typename K>
   static void run(const std::shared_ptr<storage_interface> &s_if,
-                  const storage_interface::property_map &conf,
-                  const std::shared_ptr<K> key_gen,
-                  const std::string &output_path,
-                  size_t value_size,
-                  size_t num_ops,
-                  bool warm_up,
-                  int32_t mode,
-                  uint64_t max_us) {
+                    const storage_interface::property_map &conf,
+                    const std::shared_ptr<K> key_gen,
+                    const std::string &output_path,
+                    size_t value_size,
+                    size_t num_ops,
+                    bool warm_up,
+                    int32_t mode,
+                    uint64_t max_us,
+                    const std::string &control_host,
+                    int control_port,
+                    const std::string &id) {
     int err_count = 0;
     size_t warm_up_ops = num_ops / 10;
     std::string value(value_size, 'x');
@@ -42,6 +45,8 @@ class benchmark {
 
     std::cerr << "Initializing storage interface..." << std::endl;
     s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
+
+    s_if->signal(control_host, control_port, id);
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       std::ofstream lw(output_path + "_write_latency.txt");
@@ -576,20 +581,25 @@ class benchmark {
 
   template<typename K>
   static void run_rate_limited(const std::shared_ptr<storage_interface> &s_if,
-                               const storage_interface::property_map &conf,
-                               const std::shared_ptr<K> key_gen,
-                               const std::string &output_path,
-                               double rate,
-                               size_t value_size,
-                               size_t num_ops,
-                               bool warm_up,
-                               int32_t mode,
-                               uint64_t max_us) {
+                                 const storage_interface::property_map &conf,
+                                 const std::shared_ptr<K> key_gen,
+                                 const std::string &output_path,
+                                 double rate,
+                                 size_t value_size,
+                                 size_t num_ops,
+                                 bool warm_up,
+                                 int32_t mode,
+                                 uint64_t max_us,
+                                 const std::string &control_host,
+                                 int control_port,
+                                 const std::string &id) {
 
     auto start_us = now_us();
 
     std::cerr << "Initializing storage interface..." << std::endl;
     s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
+
+    s_if->signal(control_host, control_port, id);
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       std::thread recv_thread([=]() {
@@ -631,20 +641,24 @@ class benchmark {
 
   template<typename K>
   static void run_async(const std::shared_ptr<storage_interface> &s_if,
-                        const storage_interface::property_map &conf,
-                        const std::shared_ptr<K> key_gen,
-                        const std::string &output_path,
-                        size_t value_size,
-                        size_t num_ops,
-                        size_t n_async,
-                        bool warm_up,
-                        int32_t mode,
-                        uint64_t max_us) {
+                          const storage_interface::property_map &conf,
+                          const std::shared_ptr<K> key_gen,
+                          const std::string &output_path,
+                          size_t value_size,
+                          size_t num_ops,
+                          size_t n_async,
+                          bool warm_up,
+                          int32_t mode,
+                          uint64_t max_us,
+                          const std::string &control_host,
+                          int control_port,
+                          const std::string &id) {
     auto start_us = now_us();
 
     std::cerr << "Initializing storage interface..." << std::endl;
     s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
 
+    s_if->signal(control_host, control_port, id);
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE)
       benchmark::async_writes(s_if, key_gen, output_path, value_size, num_ops, n_async, warm_up, start_us, max_us);
 

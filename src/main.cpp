@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv) {
   if (argc != 9) {
-    std::cerr << "Usage: " << argv[0] << " system conf_file output_prefix value_size mode num_ops warm_up dist"
+    std::cerr << "Usage: " << argv[0] << " id system conf_file output_prefix value_size mode num_ops warm_up dist"
               << std::endl;
     return -1;
   }
@@ -19,14 +19,15 @@ int main(int argc, char **argv) {
   m_options.loggingOptions.logLevel = Aws::Utils::Logging::LogLevel::Warn;
   Aws::InitAPI(m_options);
 
-  std::string system = argv[1];
-  std::string conf_file = argv[2];
-  std::string result_prefix = argv[3];
-  size_t value_size = std::stoull(argv[4]);
+  std::string id = argv[1];
+  std::string system = argv[2];
+  std::string conf_file = argv[3];
+  std::string result_prefix = argv[4];
+  size_t value_size = std::stoull(argv[5]);
   int32_t mode = 0;
   bool async = false;
   size_t rate = 0;
-  std::string m(argv[5]);
+  std::string m(argv[6]);
   if (m.find("read") != std::string::npos) {
     mode |= BENCHMARK_READ;
   }
@@ -48,8 +49,8 @@ int main(int argc, char **argv) {
     std::cerr << "Rate: " << rate << std::endl;
     async = true;
   }
-  size_t n_ops = std::stoull(argv[6]);
-  bool warm_up = static_cast<bool>(std::stod(argv[7]));
+  size_t n_ops = std::stoull(argv[7]);
+  bool warm_up = static_cast<bool>(std::stod(argv[8]));
 
   namespace pt = boost::property_tree;
   pt::ptree conf;
@@ -65,23 +66,71 @@ int main(int argc, char **argv) {
   auto b_conf = conf.get_child("benchmark");
   std::string output_prefix = result_prefix + "_" + std::to_string(value_size);
   uint64_t timeout = b_conf.get<uint64_t>("timeout", LAMBDA_TIMEOUT_SAFE) * 1000 * 1000;
-  if (!strcmp(argv[8], "zipf")) {
+  std::string control_host = b_conf.get<std::string>("control_host", "localhost");
+  int control_port = b_conf.get<int>("control_port", 8889);
+  if (!strcmp(argv[9], "zipf")) {
     auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
     auto remaining = timeout - (benchmark::now_us() - begin);
     if (async) {
-      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, rate, warm_up, mode, remaining);
+      benchmark::run_async(s_if,
+                           s_conf,
+                           key_gen,
+                           output_prefix,
+                           value_size,
+                           n_ops,
+                           rate,
+                           warm_up,
+                           mode,
+                           remaining,
+                           control_host,
+                           control_port,
+                           id);
     } else {
-      benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
+      benchmark::run(s_if,
+                     s_conf,
+                     key_gen,
+                     output_prefix,
+                     value_size,
+                     n_ops,
+                     warm_up,
+                     mode,
+                     remaining,
+                     control_host,
+                     control_port,
+                     id);
     }
-  } else if (!strcmp(argv[8], "sequential")) {
+  } else if (!strcmp(argv[9], "sequential")) {
     auto begin = benchmark::now_us();
     auto key_gen = std::make_shared<sequential_key_generator>();
     auto remaining = timeout - (benchmark::now_us() - begin);
     if (async) {
-      benchmark::run_async(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, rate, warm_up, mode, remaining);
+      benchmark::run_async(s_if,
+                           s_conf,
+                           key_gen,
+                           output_prefix,
+                           value_size,
+                           n_ops,
+                           rate,
+                           warm_up,
+                           mode,
+                           remaining,
+                           control_host,
+                           control_port,
+                           id);
     } else {
-      benchmark::run(s_if, s_conf, key_gen, output_prefix, value_size, n_ops, warm_up, mode, remaining);
+      benchmark::run(s_if,
+                     s_conf,
+                     key_gen,
+                     output_prefix,
+                     value_size,
+                     n_ops,
+                     warm_up,
+                     mode,
+                     remaining,
+                     control_host,
+                     control_port,
+                     id);
     }
   } else {
     std::cerr << "Unknown key distribution: " << argv[8] << std::endl;
