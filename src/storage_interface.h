@@ -21,29 +21,33 @@ class storage_interface {
 
   bool signal(const std::string &host, int port, const std::string &id) {
     int sock = 0;
-    struct sockaddr_in serv_addr{};
-    std::string msg = "READY:" + id;
-    char buffer[1024] = {0};
+    struct sockaddr_in server_address;
+    memset(&server_address, 0, sizeof(server_address));
+
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
       std::cerr << "Socket creation error" << std::endl;
       return false;
     }
-    memset(&serv_addr, 0, sizeof(serv_addr));
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(port);
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, host.c_str(), &serv_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, host.c_str(), &server_address.sin_addr) <= 0) {
       std::cerr << "Invalid address/address not supported" << std::endl;
       return false;
     }
 
-    if (connect(sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+    if (connect(sock, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
       std::cerr << "Connection failed" << std::endl;
       return false;
     }
+
+    std::string msg = "READY:" + id;
     ::send(sock, msg.data(), msg.length(), 0);
+
+    char buffer[1024] = {0};
     ::read(sock, buffer, 1024);
+
     std::cerr << "buffer: [" << buffer << "]" << std::endl;
     return strcmp(buffer, "RUN") == 0;
   }
