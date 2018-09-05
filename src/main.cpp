@@ -9,7 +9,7 @@
 #define LAMBDA_TIMEOUT_SAFE 240
 
 int main(int argc, char **argv) {
-  if (argc != 9) {
+  if (argc != 10) {
     std::cerr << "Usage: " << argv[0] << " id system conf_file output_prefix value_size mode num_ops warm_up dist"
               << std::endl;
     return -1;
