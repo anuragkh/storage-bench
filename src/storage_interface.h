@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 class storage_interface {
  public:
@@ -31,10 +32,20 @@ class storage_interface {
 
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(port);
+
     // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, host.c_str(), &server_address.sin_addr) <= 0) {
-      std::cerr << "Invalid address/address not supported" << std::endl;
-      return false;
+    struct hostent *he;
+    struct in_addr **addr_list;
+    if (inet_addr(host.c_str()) == INADDR_NONE) {
+      if ((he = gethostbyname(host.c_str())) == nullptr) {
+        // get the host info
+        std::cerr << "Could not resolve hostname: " << host << std::endl;
+        return false;
+      }
+      addr_list = (struct in_addr **) he->h_addr_list;
+      server_address.sin_addr = *addr_list[0];
+    } else {
+      server_address.sin_addr.s_addr = inet_addr(host.c_str());
     }
 
     if (connect(sock, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
