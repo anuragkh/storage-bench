@@ -49,7 +49,7 @@ class storage_interface {
     }
 
     if (connect(sock, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
-      std::cerr << "Connection failed" << std::endl;
+      std::cerr << "Connection to " << host << ":" << port << " failed" << std::endl;
       return false;
     }
 

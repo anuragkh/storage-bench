@@ -61,12 +61,15 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  char hbuf[1024];
+  gethostname(hbuf, sizeof(hbuf));
+
   auto s_if = storage_interfaces::get_interface(system);
   auto s_conf = conf.get_child(system);
   auto b_conf = conf.get_child("benchmark");
   std::string output_prefix = result_prefix + "_" + std::to_string(value_size);
   uint64_t timeout = b_conf.get<uint64_t>("timeout", LAMBDA_TIMEOUT_SAFE) * 1000 * 1000;
-  std::string control_host = b_conf.get<std::string>("control_host", "localhost");
+  std::string control_host = b_conf.get<std::string>("control_host", hbuf);
   int control_port = b_conf.get<int>("control_port", 8889);
   if (!strcmp(argv[9], "zipf")) {
     auto begin = benchmark::now_us();
