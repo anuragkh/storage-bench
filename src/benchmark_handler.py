@@ -125,7 +125,12 @@ def benchmark_handler(event, context):
     num_ops = event.get('num_ops')
     warm_up = event.get('warm_up')
     dist = event.get('dist')
-    result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
+    if bench_type == 'storage_bench':
+        result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
+    elif bench_type == 'notification_bench':
+        result_suffixes = ['_{}'.format(i) for i in range(int(system.get('num_listeners')))]
+    else:
+        raise RuntimeError('Unknown benchmark type {}'.format(bench_type))
 
     try:
         logger = _connect_logger(host, log_port)
