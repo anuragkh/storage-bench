@@ -88,6 +88,7 @@ def invoke(args, mode, warm_up, lambda_id=str(0)):
         num_ops=args.num_ops,
         dist=args.dist,
         warm_up=warm_up,
+        num_listeners=args.num_listeners,
         mode=mode,
         id=lambda_id
     )
@@ -266,9 +267,10 @@ def main():
     parser.add_argument('--host', type=str, default=socket.gethostname(), help='name of host where script is run')
     parser.add_argument('--port', type=int, default=8888, help='port that server listens on')
     parser.add_argument('--num-ops', type=int, default=-1, help='number of operations')
+    parser.add_argument('--num-listeners', type=int, default=1, help='number of listeners (notification_bench)')
     parser.add_argument('--bin-path', type=str, default='build', help='location of executable (local mode only)')
     parser.add_argument('--obj-size', type=int, default=8, help='object size to benchmark for')
-    parser.add_argument('--dist', type=str, default='sequential', help='key distribution')
+    parser.add_argument('--dist', type=str, default='sequential', help='key distribution (storage_bench)')
     parser.add_argument('--mode', type=str, default='create_read_write_destroy', help='benchmark mode' + m_help)
     parser.add_argument('--bench-type', type=str, default='storage_bench',
                         help='benchmark (storage_bench/notification_bench)')
