@@ -65,8 +65,8 @@ class Logger(object):
         self.f.close()
 
 
-def _benchmark_binary(bin_path):
-    return os.path.join(os.environ.get('LAMBDA_TASK_ROOT', bin_path), 'storage_bench')
+def _benchmark_binary(bin_path, executable):
+    return os.path.join(os.environ.get('LAMBDA_TASK_ROOT', bin_path), executable)
 
 
 def _copy_results(logger, system, result):
@@ -77,9 +77,14 @@ def _copy_results(logger, system, result):
             bucket.put_object(Key=os.path.join(system, os.path.basename(result)), Body=data)
 
 
-def _run_benchmark(logger, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
-    executable = _benchmark_binary(bin_path)
-    cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
+def _run_benchmark(logger, bench_type, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
+    executable = _benchmark_binary(bin_path, bench_type)
+    if bench_type == 'storage_bench':
+        cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
+    elif bench_type == 'notification_bench':
+        cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops)]
+    else:
+        raise RuntimeError('Invalid benchmark type: {}'.format(bench_type))
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
     try:
         subprocess.check_call(cmdline, shell=False, stderr=logger.stderr(), stdout=logger.stdout())
@@ -107,6 +112,7 @@ def _connect_logger(host, port):
 
 
 def benchmark_handler(event, context):
+    bench_type = event.get('bench_type')
     system = event.get('system')
     sys_conf = event.get('conf')
     bench_conf = event.get('bench_conf')
@@ -133,8 +139,7 @@ def benchmark_handler(event, context):
     conf_file = prefix + '.conf'
     try:
         _create_ini(logger, system, sys_conf, bench_conf, conf_file)
-        _run_benchmark(logger, i, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist,
-                       bin_path)
+        _run_benchmark(logger, bench_type, i, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist, bin_path)
     except Exception as e:
         logger.error(e)
         logger.abort(e)

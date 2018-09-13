@@ -77,6 +77,7 @@ def invoke_locally(e):
 
 def invoke(args, mode, warm_up, lambda_id=str(0)):
     e = dict(
+        bench_type=args.bench_type,
         system=args.system,
         conf=parse_ini(args.system, args.conf),
         bench_conf=parse_ini("benchmark", args.conf),
@@ -269,6 +270,8 @@ def main():
     parser.add_argument('--obj-size', type=int, default=8, help='object size to benchmark for')
     parser.add_argument('--dist', type=str, default='sequential', help='key distribution')
     parser.add_argument('--mode', type=str, default='create_read_write_destroy', help='benchmark mode' + m_help)
+    parser.add_argument('--bench-type', type=str, default='storage_bench',
+                        help='benchmark (storage_bench/notification_bench)')
     args = parser.parse_args()
 
     if args.create:
