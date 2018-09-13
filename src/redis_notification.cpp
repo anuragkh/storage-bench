@@ -2,9 +2,9 @@
 #include "redis_notification.h"
 #include "benchmark_utils.h"
 
-void redis_notification::init(const storage_interface::property_map &conf, bool) {
+void redis_notification::init(const property_map &conf, bool, size_t num_listeners) {
   std::string endpoint = conf.get<std::string>("endpoint", "127.0.0.1:6379");
-  m_num_listeners = conf.get<size_t>("num_listeners");
+  m_num_listeners = num_listeners;
   std::cerr << "num listeners = " << m_num_listeners << std::endl;
   m_notification_ts.resize(m_num_listeners);
   m_sub.resize(m_num_listeners);

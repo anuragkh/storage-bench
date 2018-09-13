@@ -8,7 +8,7 @@
 class redis_notification : public notification_interface {
  public:
 
-  void init(const property_map &conf, bool create) override;
+  void init(const property_map &conf, bool create, size_t num_listeners) override;
 
   void subscribe(const std::string &channel) override;
 

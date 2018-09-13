@@ -174,6 +174,7 @@ class benchmark {
                                       const std::string &output_path,
                                       size_t value_size,
                                       size_t num_ops,
+                                      size_t num_listeners,
                                       int32_t mode,
                                       uint64_t max_us,
                                       const std::string &control_host,
@@ -185,9 +186,8 @@ class benchmark {
     auto start_us = benchmark_utils::now_us();
 
     std::cerr << "Initializing storage interface..." << std::endl;
-    s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
+    s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE, num_listeners);
 
-    auto num_listeners = conf.get<size_t>("num_listeners");
     auto channel = conf.get<std::string>("channel");
     for (size_t i = 0; i < num_listeners; i++) {
       s_if->subscribe(channel);

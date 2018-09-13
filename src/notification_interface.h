@@ -8,7 +8,7 @@ class notification_interface {
  public:
   typedef boost::property_tree::ptree property_map;
 
-  virtual void init(const property_map &conf, bool create) = 0;
+  virtual void init(const property_map &conf, bool create, size_t num_listeners) = 0;
 
   virtual void subscribe(const std::string &channel) = 0;
 

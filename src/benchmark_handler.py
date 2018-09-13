@@ -79,12 +79,13 @@ def _copy_results(logger, system, result):
         logger.warn('Result file {} not found'.format(result))
 
 
-def _run_benchmark(logger, bench_type, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
+def _run_benchmark(logger, bench_type, lambda_id, system, conf, out, bench, num_ops, warm_up, num_listeners, mode, dist,
+                   bin_path):
     executable = _benchmark_binary(bin_path, bench_type)
     if bench_type == 'storage_bench':
         cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     elif bench_type == 'notification_bench':
-        cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops)]
+        cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), num_listeners]
     else:
         raise RuntimeError('Invalid benchmark type: {}'.format(bench_type))
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
@@ -127,10 +128,11 @@ def benchmark_handler(event, context):
     num_ops = event.get('num_ops')
     warm_up = event.get('warm_up')
     dist = event.get('dist')
+    num_listeners = event.get('num_listeners')
     if bench_type == 'storage_bench':
         result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
     elif bench_type == 'notification_bench':
-        result_suffixes = ['_{}.txt'.format(l) for l in range(int(sys_conf.get('num_listeners')))]
+        result_suffixes = ['_{}.txt'.format(l) for l in range(int(num_listeners))]
     else:
         raise RuntimeError('Unknown benchmark type {}'.format(bench_type))
 
@@ -146,7 +148,8 @@ def benchmark_handler(event, context):
     conf_file = prefix + '.conf'
     try:
         _create_ini(logger, system, sys_conf, bench_conf, conf_file)
-        _run_benchmark(logger, bench_type, i, system, conf_file, prefix, object_size, num_ops, warm_up, mode, dist, bin_path)
+        _run_benchmark(logger, bench_type, i, system, conf_file, prefix, object_size, num_ops, warm_up, num_listeners,
+                       mode, dist, bin_path)
     except Exception as e:
         logger.error(e)
         logger.abort(e)

@@ -8,8 +8,9 @@
 #define LAMBDA_TIMEOUT_SAFE 240
 
 int main(int argc, char **argv) {
-  if (argc != 8) {
-    std::cerr << "Usage: " << argv[0] << " id system conf_file output_prefix value_size mode num_ops" << std::endl;
+  if (argc != 9) {
+    std::cerr << "Usage: " << argv[0] << " id system conf_file output_prefix value_size mode num_ops num_listeners"
+              << std::endl;
     return -1;
   }
 
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
     mode |= BENCHMARK_DESTROY;
   }
   size_t n_ops = std::stoull(argv[7]);
+  size_t n_listeners = std::stoull(argv[8]);
 
   namespace pt = boost::property_tree;
   pt::ptree conf;
@@ -62,15 +64,16 @@ int main(int argc, char **argv) {
   auto remaining = timeout - (benchmark_utils::now_us() - begin);
 
   benchmark::benchmark_notifications(s_if,
-                 s_conf,
-                 output_prefix,
-                 value_size,
-                 n_ops,
-                 mode,
-                 remaining,
-                 control_host,
-                 control_port,
-                 id);
+                                     s_conf,
+                                     output_prefix,
+                                     value_size,
+                                     n_ops,
+                                     0,
+                                     mode,
+                                     remaining,
+                                     control_host,
+                                     control_port,
+                                     id);
 
   Aws::ShutdownAPI(m_options);
 
