@@ -223,8 +223,7 @@ class benchmark {
     auto notification_ts = s_if->get_notification_ts();
     auto time_taken = s_if->get_latencies();
     for (size_t i = 0; i < num_listeners; ++i) {
-      auto r = time_taken[i];
-      std::ofstream out(output_path + "_" + std::to_string(i) + ".txt");
+      std::ofstream out(output_path + "_" + std::to_string(i) + "Of" + std::to_string(num_listeners) + ".txt");
       for (size_t j = 0; j < time_taken[i].size(); ++j) {
         out << publish_ts[j] << "\t" << notification_ts[i][j] << "\t" << time_taken[i][j] << "\n";
       }
