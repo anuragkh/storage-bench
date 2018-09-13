@@ -5,6 +5,7 @@
 void redis_notification::init(const storage_interface::property_map &conf, bool) {
   std::string endpoint = conf.get<std::string>("endpoint", "127.0.0.1:6379");
   m_num_listeners = conf.get<size_t>("num_listeners");
+  std::cerr << "num listeners = " << m_num_listeners << std::endl;
   m_notification_ts.resize(m_num_listeners);
   m_sub_msgs = new std::atomic<size_t>[m_num_listeners]();
   m_sub = std::make_shared<cpp_redis::subscriber>();
@@ -33,8 +34,8 @@ void redis_notification::init(const storage_interface::property_map &conf, bool)
 }
 
 void redis_notification::subscribe(const std::string &channel) {
-  m_sub->subscribe(channel, [&](const std::string &, const std::string &) {
-    auto id = m_sub_count++;
+  auto id = m_sub_count++;
+  m_sub->subscribe(channel, [id, this](const std::string &, const std::string &) {
     std::cerr << "id = " << id << ", size = " << m_notification_ts.size() << std::endl;
     m_notification_ts[id].push_back(benchmark_utils::now_us());
     ++m_sub_msgs[id];
