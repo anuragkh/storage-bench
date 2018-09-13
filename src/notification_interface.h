@@ -10,11 +10,19 @@ class notification_interface {
 
   virtual void init(const property_map &conf, bool create) = 0;
 
-  virtual void subscribe(const std::string& channel) = 0;
+  virtual void subscribe(const std::string &channel) = 0;
 
   virtual void publish(const std::string &channel, const std::string &msg) = 0;
 
-  virtual std::vector<std::vector<uint64_t>> get_latencies() const = 0;
+  std::vector<std::vector<uint64_t>> get_latencies() const {
+    std::vector<std::vector<uint64_t>> ts(m_notification_ts.size());
+    for (size_t i = 0; i < m_notification_ts.size(); ++i) {
+      for (size_t j = 0; j < m_notification_ts[i].size(); ++j) {
+        ts[i].push_back(m_notification_ts[i][j] - m_publish_ts[j]);
+      }
+    }
+    return ts;
+  }
 
   virtual void destroy() = 0;
 

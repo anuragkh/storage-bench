@@ -14,8 +14,6 @@ class redis_notification : public notification_interface {
 
   void publish(const std::string &channel, const std::string &msg) override;
 
-  std::vector<std::vector<uint64_t>> get_latencies() const override;
-
   void destroy() override;
   void wait(size_t i) override;
 

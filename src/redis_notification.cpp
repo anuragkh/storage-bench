@@ -48,16 +48,6 @@ void redis_notification::publish(const std::string &channel, const std::string &
   m_client->commit();
 }
 
-std::vector<std::vector<uint64_t>> redis_notification::get_latencies() const {
-  std::vector<std::vector<uint64_t>> ts(m_notification_ts.size());
-  for (size_t i = 0; i < m_notification_ts.size(); ++i) {
-    for (size_t j = 0; j < m_notification_ts[i].size(); ++j) {
-      ts[i].push_back(m_notification_ts[i][j] - m_publish_ts[i]);
-    }
-  }
-  return ts;
-}
-
 void redis_notification::destroy() {
   m_client->disconnect(true);
   m_sub->disconnect(true);
