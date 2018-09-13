@@ -15,14 +15,17 @@ class redis_notification : public notification_interface {
   void publish(const std::string &channel, const std::string &msg) override;
 
   void destroy() override;
+
   void wait(size_t i) override;
 
  private:
   std::atomic<size_t>* m_sub_msgs{nullptr};
   size_t m_num_listeners{0};
   size_t m_sub_count{0};
-  std::shared_ptr<cpp_redis::subscriber> m_sub{};
-  std::shared_ptr<cpp_redis::client> m_client{};
+  std::vector<std::shared_ptr<cpp_redis::subscriber>> m_sub{};
+  std::shared_ptr<cpp_redis::client> m_pub{};
+  std::string m_host;
+  size_t m_port;
 };
 
 #endif //STORAGE_BENCH_REDIS_NOTIFICATION_H
