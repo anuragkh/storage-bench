@@ -1,4 +1,5 @@
 #include "redis.h"
+#include "benchmark_utils.h"
 
 const uint16_t redis::crc16tab[256] = {
     0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
@@ -35,22 +36,14 @@ const uint16_t redis::crc16tab[256] = {
     0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
 
-void split(const std::string &str, std::vector<std::string> &cont, char delim = ' ') {
-  std::stringstream ss(str);
-  std::string token;
-  while (std::getline(ss, token, delim)) {
-    cont.push_back(token);
-  }
-}
-
 void redis::init(const property_map &conf, bool) {
   std::string endpoints_str = conf.get<std::string>("endpoints", "127.0.0.1:6379");
   std::vector<std::string> endpoints;
-  split(endpoints_str, endpoints, ',');
+  benchmark_utils::split(endpoints_str, endpoints, ',');
   for (const std::string &endpoint: endpoints) {
     m_client.push_back(std::make_shared<cpp_redis::client>());
     std::vector<std::string> endpoint_parts;
-    split(endpoint, endpoint_parts, ':');
+    benchmark_utils::split(endpoint, endpoint_parts, ':');
     m_client.back()->connect(endpoint_parts.front(), std::stoull(endpoint_parts.back()),
                              [](const std::string &host, std::size_t port, cpp_redis::client::connect_state status) {
                                if (status == cpp_redis::client::connect_state::dropped

@@ -46,7 +46,7 @@ add_executable(storage_bench
         src/rate_limiter.h
         src/queue.h
         src/token_bucket.h
-        src/token_bucket.cpp)
+        src/token_bucket.cpp src/redis_notification.cpp src/redis_notification.h src/notification_interface.h src/benchmark_utils.h)
 
 if (NOT USE_SYSTEM_BOOST)
   add_dependencies(storage_bench boost)

@@ -8,61 +8,9 @@
 #include <boost/property_tree/ptree.hpp>
 #include <iostream>
 
-#include <stdio.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
 class storage_interface {
  public:
   typedef boost::property_tree::ptree property_map;
-
-  bool signal(const std::string &host, int port, const std::string &id) {
-    int sock = 0;
-    struct sockaddr_in server_address;
-    memset(&server_address, 0, sizeof(server_address));
-
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-      std::cerr << "Socket creation error" << std::endl;
-      return false;
-    }
-
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(port);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    struct hostent *he;
-    struct in_addr **addr_list;
-    if (inet_addr(host.c_str()) == INADDR_NONE) {
-      if ((he = gethostbyname(host.c_str())) == nullptr) {
-        // get the host info
-        std::cerr << "Could not resolve hostname: " << host << std::endl;
-        return false;
-      }
-      addr_list = (struct in_addr **) he->h_addr_list;
-      server_address.sin_addr = *addr_list[0];
-    } else {
-      server_address.sin_addr.s_addr = inet_addr(host.c_str());
-    }
-
-    if (connect(sock, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
-      std::cerr << "Connection to " << host << ":" << port << " failed" << std::endl;
-      return false;
-    }
-
-    std::string msg = "READY:" + id;
-    std::cerr << "Signalling " << host << ":" << port << " with message " << msg << std::endl;
-    ::send(sock, msg.data(), msg.length(), 0);
-
-    char buffer[1024] = {0};
-    ::read(sock, buffer, 1024);
-
-    std::cerr << "buffer: [" << buffer << "]" << std::endl;
-    return strcmp(buffer, "RUN") == 0;
-  }
 
   virtual void init(const property_map &conf, bool create) = 0;
   virtual void write(const std::string &key, const std::string &value) = 0;

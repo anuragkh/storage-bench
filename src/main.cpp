@@ -72,9 +72,9 @@ int main(int argc, char **argv) {
   std::string control_host = b_conf.get<std::string>("control_host", hbuf);
   int control_port = b_conf.get<int>("control_port", 8889);
   if (!strcmp(argv[9], "zipf")) {
-    auto begin = benchmark::now_us();
+    auto begin = benchmark_utils::now_us();
     auto key_gen = std::make_shared<zipf_key_generator>(0.0, n_ops);
-    auto remaining = timeout - (benchmark::now_us() - begin);
+    auto remaining = timeout - (benchmark_utils::now_us() - begin);
     if (async) {
       benchmark::run_async(s_if,
                            s_conf,
@@ -104,9 +104,9 @@ int main(int argc, char **argv) {
                      id);
     }
   } else if (!strcmp(argv[9], "sequential")) {
-    auto begin = benchmark::now_us();
+    auto begin = benchmark_utils::now_us();
     auto key_gen = std::make_shared<sequential_key_generator>();
-    auto remaining = timeout - (benchmark::now_us() - begin);
+    auto remaining = timeout - (benchmark_utils::now_us() - begin);
     if (async) {
       benchmark::run_async(s_if,
                            s_conf,
