@@ -178,7 +178,6 @@ class benchmark {
                                       const std::string &id) {
     sequential_key_generator msg_gen;
     int err_count = 0;
-    std::string value(value_size, 'x');
 
     auto start_us = benchmark_utils::now_us();
 
@@ -196,7 +195,7 @@ class benchmark {
     std::cerr << "Publishing messages..." << std::endl;
     for (size_t i = 0; i < num_ops && benchmark_utils::time_bound(start_us, max_us); ++i) {
       try {
-        s_if->publish(channel, msg_gen.next());
+        s_if->publish(channel, msg_gen.next(static_cast<int>(value_size)));
       } catch (std::runtime_error &e) {
         --i;
         ++err_count;

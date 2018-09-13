@@ -25,4 +25,47 @@ class notification_interface {
   std::vector<std::vector<uint64_t>> m_notification_ts;
 };
 
+class notification_interfaces {
+ public:
+  typedef std::map<std::string, std::shared_ptr<notification_interface>> interface_map;
+
+  static void register_interface(const std::string &name, std::shared_ptr<notification_interface> iface) {
+    interfaces()->insert({name, iface});
+  }
+
+  static void deregister_interface(const std::string &name) {
+    interfaces()->erase(name);
+  }
+
+  static std::shared_ptr<notification_interface> get_interface(const std::string &name) {
+    auto it = interfaces()->find(name);
+    if (it == interfaces()->end()) {
+      throw std::invalid_argument("No such interface " + name);
+    }
+    return it->second;
+  }
+
+  static std::shared_ptr<interface_map> interfaces() {
+    if (m_interface_map == nullptr) {
+      m_interface_map = std::make_shared<interface_map>();
+    }
+    return m_interface_map;
+  };
+
+ private:
+  static std::shared_ptr<interface_map> m_interface_map;
+};
+
+#define REGISTER_NOTIFICATION_IFACE(name, iface)                                      \
+  class iface##_notification_class {                                                  \
+   public:                                                                            \
+    iface##_notification_class() {                                                    \
+      notification_interfaces::register_interface(name, std::make_shared<iface>());   \
+    }                                                                                 \
+    ~iface##_notification_class() {                                                   \
+      notification_interfaces::deregister_interface(name);                            \
+    }                                                                                 \
+  };                                                                                  \
+  static iface##_notification_class iface##_notification_singleton
+
 #endif //STORAGE_BENCH_NOTIFICATION_INTERFACE_H

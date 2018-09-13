@@ -28,7 +28,7 @@ add_subdirectory(external/libmmux)
 include_directories(src)
 include_directories(external/libmmux/src)
 add_executable(storage_bench
-        src/main.cpp
+        src/storage_benchmark.cpp
         src/storage_interface.cpp
         src/storage_interface.h
         src/benchmark.h
@@ -46,25 +46,51 @@ add_executable(storage_bench
         src/rate_limiter.h
         src/queue.h
         src/token_bucket.h
-        src/token_bucket.cpp src/redis_notification.cpp src/redis_notification.h src/notification_interface.h src/benchmark_utils.h)
+        src/token_bucket.cpp
+        src/benchmark_utils.h)
+
+add_executable(notification_bench
+        src/notification_interface.h
+        src/notification_interface.cpp
+        src/benchmark.h
+        src/benchmark_utils.h
+        src/key_generator.h
+        src/key_generator.cpp
+        src/notification_benchmark.cpp
+        src/redis_notification.cpp
+        src/redis_notification.h)
 
 if (NOT USE_SYSTEM_BOOST)
   add_dependencies(storage_bench boost)
+  add_dependencies(notification_bench boost)
 endif ()
 
 if (NOT USE_SYSTEM_AWSSDK)
   add_dependencies(storage_bench awssdk)
+  add_dependencies(notification_bench awssdk)
 endif ()
 
 if (NOT USE_SYSTEM_JEMALLOC)
   add_dependencies(storage_bench jemalloc)
+  add_dependencies(notification_bench jemalloc)
 endif ()
 
 if (NOT USE_SYSTEM_CPP_REDIS)
   add_dependencies(storage_bench cpp_redis)
+  add_dependencies(notification_bench cpp_redis)
 endif ()
 
 target_link_libraries(storage_bench
+        mmux
+        ${JEMALLOC_LIBRARIES}
+        ${Boost_LIBRARIES}
+        ${AWS_LIBRARIES}
+        ${CURL_LIBRARY}
+        ${OPENSSL_LIBRARIES}
+        ${ZLIB_LIBRARY}
+        ${CPP_REDIS_LIBRARIES})
+
+target_link_libraries(notification_bench
         mmux
         ${JEMALLOC_LIBRARIES}
         ${Boost_LIBRARIES}
@@ -78,7 +104,8 @@ set(ZIP_FILE ${CMAKE_BINARY_DIR}/lambda.zip)
 set(BENCHMARK_RUNNER_SRC "${CMAKE_SOURCE_DIR}/src/benchmark_handler.py")
 set(BENCHMARK_RUNNER "${CMAKE_BINARY_DIR}/benchmark_handler.py")
 set(STORAGE_BENCH "${CMAKE_BINARY_DIR}/storage_bench")
-set(FILES_TO_ZIP ${CMAKE_SOURCE_DIR}/src/benchmark_handler.py ${CMAKE_BINARY_DIR}/storage_bench)
+set(NOTIFICATION_BENCH "${CMAKE_BINARY_DIR}/notification_bench")
+set(FILES_TO_ZIP ${CMAKE_SOURCE_DIR}/src/benchmark_handler.py ${STORAGE_BENCH} ${NOTIFICATION_BENCH})
 message(STATUS "Files to zip: ${FILES_TO_ZIP}")
 
 add_custom_command(OUTPUT ${ZIP_FILE}

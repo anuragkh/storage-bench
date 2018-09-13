@@ -65,3 +65,5 @@ void redis_notification::destroy() {
 void redis_notification::wait(size_t i) {
   while (m_sub_msgs[i].load() != m_publish_ts.size());
 }
+
+REGISTER_NOTIFICATION_IFACE("redis", redis_notification);
