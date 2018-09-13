@@ -112,7 +112,7 @@ add_custom_command(OUTPUT ${ZIP_FILE}
         COMMAND ${CMAKE_COMMAND} -E copy ${BENCHMARK_RUNNER_SRC} ${BENCHMARK_RUNNER}
         COMMAND ${CMAKE_COMMAND} -E tar cfv ${ZIP_FILE} --format=zip -- ${STORAGE_BENCH} ${BENCHMARK_RUNNER}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        DEPENDS storage_bench
+        DEPENDS storage_bench notification_bench
         COMMENT "Packaging code"
         VERBATIM)
 add_custom_target(pkg DEPENDS ${ZIP_FILE})
