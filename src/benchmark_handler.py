@@ -75,6 +75,8 @@ def _copy_results(logger, system, result):
         logger.info('Copying results @ {} to S3...'.format(result))
         with open(result, 'rb') as data:
             bucket.put_object(Key=os.path.join(system, os.path.basename(result)), Body=data)
+    else:
+        logger.warn('Result file {} not found'.format(result))
 
 
 def _run_benchmark(logger, bench_type, lambda_id, system, conf, out, bench, num_ops, warm_up, mode, dist, bin_path):
@@ -128,7 +130,7 @@ def benchmark_handler(event, context):
     if bench_type == 'storage_bench':
         result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
     elif bench_type == 'notification_bench':
-        result_suffixes = ['_{}'.format(l) for l in range(int(sys_conf.get('num_listeners')))]
+        result_suffixes = ['_{}.txt'.format(l) for l in range(int(sys_conf.get('num_listeners')))]
     else:
         raise RuntimeError('Unknown benchmark type {}'.format(bench_type))
 
