@@ -128,7 +128,7 @@ def benchmark_handler(event, context):
     if bench_type == 'storage_bench':
         result_suffixes = ['_read_latency.txt', '_read_throughput.txt', '_write_latency.txt', '_write_throughput.txt']
     elif bench_type == 'notification_bench':
-        result_suffixes = ['_{}'.format(i) for i in range(int(system.get('num_listeners')))]
+        result_suffixes = ['_{}'.format(i) for i in range(int(sys_conf.get('num_listeners')))]
     else:
         raise RuntimeError('Unknown benchmark type {}'.format(bench_type))
 
