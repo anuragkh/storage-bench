@@ -38,14 +38,17 @@ void redis_notification::subscribe(const std::string &channel) {
   m_sub->subscribe(channel, [id, this](const std::string &, const std::string &) {
     m_notification_ts[id].push_back(benchmark_utils::now_us());
     ++m_sub_msgs[id];
-  });
-  m_sub->commit();
+  }).commit();
 }
 
 void redis_notification::publish(const std::string &channel, const std::string &msg) {
   m_publish_ts.push_back(benchmark_utils::now_us());
-  m_client->publish(channel, msg);
+  auto fut = m_client->publish(channel, msg);
   m_client->commit();
+  auto reply = fut.get();
+  if (reply.is_error()) {
+    throw std::runtime_error("Publish failed: " +  reply.error());
+  }
 }
 
 void redis_notification::destroy() {
@@ -54,7 +57,9 @@ void redis_notification::destroy() {
 }
 
 void redis_notification::wait(size_t i) {
-  while (m_sub_msgs[i].load() != m_publish_ts.size());
+  while (m_sub_msgs[i].load() != m_publish_ts.size()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  }
 }
 
 REGISTER_NOTIFICATION_IFACE("redis", redis_notification);
