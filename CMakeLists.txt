@@ -105,12 +105,12 @@ set(BENCHMARK_RUNNER_SRC "${CMAKE_SOURCE_DIR}/src/benchmark_handler.py")
 set(BENCHMARK_RUNNER "${CMAKE_BINARY_DIR}/benchmark_handler.py")
 set(STORAGE_BENCH "${CMAKE_BINARY_DIR}/storage_bench")
 set(NOTIFICATION_BENCH "${CMAKE_BINARY_DIR}/notification_bench")
-set(FILES_TO_ZIP ${CMAKE_SOURCE_DIR}/src/benchmark_handler.py ${STORAGE_BENCH} ${NOTIFICATION_BENCH})
+set(FILES_TO_ZIP ${BENCHMARK_RUNNER} ${STORAGE_BENCH} ${NOTIFICATION_BENCH})
 message(STATUS "Files to zip: ${FILES_TO_ZIP}")
 
 add_custom_command(OUTPUT ${ZIP_FILE}
         COMMAND ${CMAKE_COMMAND} -E copy ${BENCHMARK_RUNNER_SRC} ${BENCHMARK_RUNNER}
-        COMMAND ${CMAKE_COMMAND} -E tar cfv ${ZIP_FILE} --format=zip -- ${STORAGE_BENCH} ${BENCHMARK_RUNNER}
+        COMMAND ${CMAKE_COMMAND} -E tar cfv ${ZIP_FILE} --format=zip -- ${FILES_TO_ZIP}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         DEPENDS storage_bench notification_bench
         COMMENT "Packaging code"
