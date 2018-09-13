@@ -85,7 +85,7 @@ def _run_benchmark(logger, bench_type, lambda_id, system, conf, out, bench, num_
     if bench_type == 'storage_bench':
         cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), str(warm_up), dist]
     elif bench_type == 'notification_bench':
-        cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), num_listeners]
+        cmdline = [executable, lambda_id, system, conf, out, str(bench), mode, str(num_ops), str(num_listeners)]
     else:
         raise RuntimeError('Invalid benchmark type: {}'.format(bench_type))
     logger.info('Running benchmark, cmd: {}'.format(cmdline))
