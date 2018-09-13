@@ -49,7 +49,10 @@ class benchmark {
     std::cerr << "Initializing storage interface..." << std::endl;
     s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
 
-    benchmark_utils::signal(control_host, control_port, id);
+    if (!benchmark_utils::signal(control_host, control_port, id)) {
+      std::cerr << "Aborting benchmark..." << std::endl;
+      return;
+    }
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       std::ofstream lw(output_path + "_write_latency.txt");
@@ -190,7 +193,10 @@ class benchmark {
       s_if->subscribe(channel);
     }
 
-    benchmark_utils::signal(control_host, control_port, id);
+    if (!benchmark_utils::signal(control_host, control_port, id)) {
+      std::cerr << "Aborting benchmark..." << std::endl;
+      return;
+    }
 
     std::cerr << "Publishing messages..." << std::endl;
     for (size_t i = 0; i < num_ops && benchmark_utils::time_bound(start_us, max_us); ++i) {
@@ -213,12 +219,14 @@ class benchmark {
       s_if->wait(i);
     }
 
-    auto res = s_if->get_latencies();
+    auto publish_ts = s_if->get_publish_ts();
+    auto notification_ts = s_if->get_notification_ts();
+    auto time_taken = s_if->get_latencies();
     for (size_t i = 0; i < num_listeners; ++i) {
-      auto r = res[i];
+      auto r = time_taken[i];
       std::ofstream out(output_path + "_" + std::to_string(i) + ".txt");
-      for (const auto &l: r) {
-        out << l << "\n";
+      for (size_t j = 0; j < time_taken[i].size(); ++j) {
+        out << publish_ts[j] << "\t" << notification_ts[i][j] << "\t" << time_taken[i][j] << "\n";
       }
     }
 
@@ -664,7 +672,10 @@ class benchmark {
     std::cerr << "Initializing storage interface..." << std::endl;
     s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
 
-    benchmark_utils::signal(control_host, control_port, id);
+    if (!benchmark_utils::signal(control_host, control_port, id)) {
+      std::cerr << "Aborting benchmark..." << std::endl;
+      return;
+    }
 
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE) {
       std::thread recv_thread([=]() {
@@ -723,7 +734,11 @@ class benchmark {
     std::cerr << "Initializing storage interface..." << std::endl;
     s_if->init(conf, (mode & BENCHMARK_CREATE) == BENCHMARK_CREATE);
 
-    benchmark_utils::signal(control_host, control_port, id);
+    if (!benchmark_utils::signal(control_host, control_port, id)) {
+      std::cerr << "Aborting benchmark..." << std::endl;
+      return;
+    }
+
     if ((mode & BENCHMARK_WRITE) == BENCHMARK_WRITE)
       benchmark::async_writes(s_if, key_gen, output_path, value_size, num_ops, n_async, warm_up, start_us, max_us);
 

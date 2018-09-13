@@ -14,6 +14,14 @@ class notification_interface {
 
   virtual void publish(const std::string &channel, const std::string &msg) = 0;
 
+  std::vector<uint64_t> get_publish_ts() const {
+    return m_publish_ts;
+  }
+
+  std::vector<std::vector<uint64_t>> get_notification_ts() const {
+    return m_notification_ts;
+  }
+
   std::vector<std::vector<uint64_t>> get_latencies() const {
     std::vector<std::vector<uint64_t>> ts(m_notification_ts.size());
     for (size_t i = 0; i < m_notification_ts.size(); ++i) {
