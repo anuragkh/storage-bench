@@ -36,7 +36,6 @@ void redis_notification::init(const storage_interface::property_map &conf, bool)
 void redis_notification::subscribe(const std::string &channel) {
   auto id = m_sub_count++;
   m_sub->subscribe(channel, [id, this](const std::string &, const std::string &) {
-    std::cerr << "id = " << id << ", size = " << m_notification_ts.size() << std::endl;
     m_notification_ts[id].push_back(benchmark_utils::now_us());
     ++m_sub_msgs[id];
   });
