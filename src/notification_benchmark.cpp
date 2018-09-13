@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
                                      output_prefix,
                                      value_size,
                                      n_ops,
-                                     0,
+                                     n_listeners,
                                      mode,
                                      remaining,
                                      control_host,
