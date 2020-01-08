@@ -2,11 +2,11 @@
 #define STORAGE_BENCH_BENCHMARK_UTILS_H
 
 #include <string>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/socket.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <netinet/in.h>
-#include <string.h>
+#include <cstring>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <iostream>
@@ -39,7 +39,7 @@ class benchmark_utils {
 
   static bool signal(const std::string &host, int port, const std::string &id) {
     int sock = 0;
-    struct sockaddr_in server_address;
+    struct sockaddr_in server_address{};
     memset(&server_address, 0, sizeof(server_address));
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
